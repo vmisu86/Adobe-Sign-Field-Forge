@@ -1,0 +1,88 @@
+<nz-card nzTitle="Field Details" [nzBodyStyle]="{'padding': '16px'}" *ngIf="localField">
+  <form nz-form nzLayout="vertical">
+    <nz-form-item>
+      <nz-form-label>Field Name</nz-form-label>
+      <nz-form-control>
+        <input nz-input [(ngModel)]="localField.name" name="fieldName" placeholder="Enter field name"
+          (ngModelChange)="onFieldNameChange($event)" />
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-label>Type</nz-form-label>
+      <nz-form-control>
+        <nz-tag [nzColor]="fieldTypeService.getFieldColor(localField)">
+          <i nz-icon [nzType]="fieldTypeService.getFieldIcon(localField)"></i>
+          {{ localField.inputType }}
+        </nz-tag>
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-label>Position</nz-form-label>
+      <nz-form-control>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <nz-input-wrapper nzAddonBefore="X">
+            <input nz-input type="number" [(ngModel)]="localField.locations.left" name="left" min="0" step="1"
+              style="width: 100%;" (ngModelChange)="onPositionChange('left', $event)" />
+          </nz-input-wrapper>
+
+          <nz-input-wrapper nzAddonBefore="Y">
+            <input nz-input type="number" [(ngModel)]="localField.locations.top" name="top" min="0" step="1"
+              style="width: 100%;" (ngModelChange)="onPositionChange('top', $event)" />
+          </nz-input-wrapper>
+        </div>
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-label>Size</nz-form-label>
+      <nz-form-control>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <nz-input-wrapper nzAddonBefore="W">
+            <input nz-input type="number" [(ngModel)]="localField.locations.width" name="width" min="0" step="1"
+              style="width: 100%;" (ngModelChange)="onSizeChange('width', $event)" />
+          </nz-input-wrapper>
+
+          <nz-input-wrapper nzAddonBefore="H">
+            <input nz-input type="number" [(ngModel)]="localField.locations.height" name="height" min="0" step="1"
+              style="width: 100%;" (ngModelChange)="onSizeChange('height', $event)" />
+          </nz-input-wrapper>
+        </div>
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-label>Recipient</nz-form-label>
+      <nz-form-control>
+        <nz-select [(ngModel)]="localField.recipientIndex" name="recipient" style="width: 100%;"
+          (ngModelChange)="onRecipientChange($event)">
+          <nz-option [nzValue]="1" nzLabel="Signer 1"></nz-option>
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-control>
+        <label nz-checkbox [(ngModel)]="localField.required" name="required"
+          (ngModelChange)="onRequiredChange($event)">Required Field</label>
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-control>
+        <label nz-checkbox [(ngModel)]="localField.readOnly" name="readOnly"
+          (ngModelChange)="onReadOnlyChange($event)">Read Only</label>
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-control>
+        <button nz-button nzType="primary" nzDanger nzBlock (click)="onDelete()">
+          <i nz-icon nzType="delete"></i>
+          Delete Field
+        </button>
+      </nz-form-control>
+    </nz-form-item>
+  </form>
+</nz-card>

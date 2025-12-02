@@ -1,0 +1,50 @@
+// Fields List
+.fields-list-container {
+  margin-top: 24px;
+
+  .group-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #8c8c8c;
+    letter-spacing: 0.5px;
+    padding: 8px 0;
+    margin-bottom: 8px;
+  }
+}
+
+nz-list-item {
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: all 0.3s;
+
+  &:hover {
+    background: #f5f5f5;
+  }
+
+  &.selected {
+    background: #e6f7ff;
+    border-left: 3px solid #1890ff;
+    padding-left: 9px;
+  }
+}
+
+.field-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+
+  .field-name {
+    flex: 1;
+    font-size: 13px;
+    color: #262626;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  i {
+    font-size: 16px;
+  }
+}

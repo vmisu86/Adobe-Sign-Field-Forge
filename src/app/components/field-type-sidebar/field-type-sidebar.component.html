@@ -1,0 +1,40 @@
+<div class="sidebar-content">
+  <div class="sidebar-header">
+    <h3>Field Types</h3>
+  </div>
+
+  <!-- Search Field Types -->
+  <div class="search-container">
+    <nz-input-wrapper>
+      <input type="text" nz-input placeholder="Search field types..." [(ngModel)]="searchFieldType">
+      <i nz-icon nzType="search" nz-input-prefix></i>
+    </nz-input-wrapper>
+  </div>
+
+  <!-- Field Type Cards -->
+  <div class="field-types-container">
+    <div *ngFor="let group of filteredFieldTypeGroups" class="field-type-group">
+      <div class="group-label">{{ group.label }}</div>
+      <div class="field-type-grid">
+        <nz-card *ngFor="let field of group.items" class="field-type-card"
+          [class.selected]="isFieldTypeSelected(field)"
+          (click)="onFieldTypeClick(field)" [nzBodyStyle]="{'padding': '12px'}" nzHoverable>
+          <div class="field-type-content">
+            <i nz-icon [nzType]="field.icon" [style.color]="field.color" [style.fontSize]="'24px'"></i>
+            <div class="field-type-info">
+              <div class="field-type-label">{{ field.label }}</div>
+            </div>
+          </div>
+        </nz-card>
+      </div>
+    </div>
+  </div>
+
+  <!-- Field List -->
+  <app-field-list
+    [fields]="fields"
+    [selectedFieldId]="selectedFieldId"
+    [currentPage]="currentPage"
+    (fieldSelected)="onFieldClick($event)">
+  </app-field-list>
+</div>

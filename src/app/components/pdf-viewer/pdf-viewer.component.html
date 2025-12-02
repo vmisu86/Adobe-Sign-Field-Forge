@@ -1,0 +1,95 @@
+<nz-layout class="app-layout">
+  <!-- Top Header/Toolbar -->
+  <app-toolbar
+    [canUndo]="canUndo"
+    [canRedo]="canRedo"
+    [currentPage]="currentPage"
+    [totalPages]="totalPages"
+    [showGrid]="showGrid"
+    [snapToGrid]="snapToGrid"
+    [documentType]="documentType"
+    [leftSidebarCollapsed]="leftSidebarCollapsed"
+    [rightSidebarCollapsed]="rightSidebarCollapsed"
+    (fileSelected)="onToolbarFileSelected($event)"
+    (importClicked)="onToolbarImportClicked()"
+    (exportClicked)="onToolbarExportClicked()"
+    (jsonViewClicked)="onToolbarJsonViewClicked()"
+    (pageChanged)="onToolbarPageChanged($event)"
+    (gridToggled)="onToolbarGridToggled($event)"
+    (snapToggled)="onToolbarSnapToggled($event)"
+    (undoClicked)="onToolbarUndoClicked()"
+    (redoClicked)="onToolbarRedoClicked()"
+    (documentTypeChanged)="onToolbarDocumentTypeChanged($event)"
+    (leftSidebarToggled)="onToolbarLeftSidebarToggled($event)"
+    (rightSidebarToggled)="onToolbarRightSidebarToggled($event)">
+  </app-toolbar>
+
+  <!-- Field Type Indicator Banner -->
+  @if (selectedFieldType && (getSelectedFieldType())){
+  <nz-alert nzType="info" nzBanner
+    [nzMessage]="'✏️ Selected: ' + getSelectedFieldType()?.label + ' - Click on empty canvas to draw, click on fields to select'"
+    nzCloseable (nzOnClose)="selectedFieldType = ''">
+  </nz-alert>
+  }
+
+  <nz-layout>
+    <!-- Left Sidebar - Field Types & List -->
+    @if(!leftSidebarCollapsed){
+    <nz-sider [nzWidth]="280" nzTheme="light" class="left-sidebar">
+      <app-field-type-sidebar
+        [fieldTypeGroups]="fieldTypeGroups"
+        [selectedFieldType]="selectedFieldType"
+        [fields]="fields"
+        [currentPage]="currentPage"
+        [selectedFieldId]="selectedField?.id || null"
+        (fieldTypeSelected)="onFieldTypeSidebarFieldTypeSelected($event)"
+        (fieldSelected)="onFieldTypeSidebarFieldSelected($event)">
+      </app-field-type-sidebar>
+    </nz-sider>
+    }
+    <!-- Main Content Area -->
+    <nz-layout>
+      <nz-content class="main-content">
+        <!-- Empty State when no PDF -->
+        @if(!pdfDocument){
+        <div class="empty-state">
+          <nz-empty [nzNotFoundImage]="'https://gw.alipayobjects.com/zos/antfincdn/ZHrcdLPrvN/empty.svg'"
+            [nzNotFoundContent]="contentTpl">
+            <ng-template #contentTpl>
+              <h2>Welcome to FieldForge</h2>
+              <p>Upload a PDF document to start adding form fields</p>
+              <nz-upload [nzBeforeUpload]="beforeUpload" (nzChange)="onFileSelected($event)">
+                <button nz-button nzType="primary" nzSize="large">
+                  <i nz-icon nzType="upload"></i>
+                  Upload PDF Document
+                </button>
+              </nz-upload>
+            </ng-template>
+          </nz-empty>
+        </div>
+        }
+        <!-- PDF Canvas -->
+        @if(pdfDocument){
+        <div class="pdf-canvas-container">
+          <canvas #pdfCanvas class="pdf-canvas"></canvas>
+          <canvas #drawingCanvas class="drawing-canvas"
+            [class.drawing-mode]="selectedFieldType && getSelectedFieldType()" (mousedown)="onMouseDown($event)"
+            (mousemove)="onMouseMove($event)" (mouseup)="onMouseUp($event)">
+          </canvas>
+        </div>
+        }
+      </nz-content>
+    </nz-layout>
+
+    <!-- Right Sidebar - Properties -->
+    @if(!rightSidebarCollapsed){
+    <nz-sider [nzWidth]="320" nzTheme="light" class="right-sidebar">
+      <app-field-properties-sidebar
+        [selectedField]="selectedField"
+        (fieldUpdated)="onFieldPropertiesSidebarFieldUpdated($event)"
+        (fieldDeleted)="onFieldPropertiesSidebarFieldDeleted()">
+      </app-field-properties-sidebar>
+    </nz-sider>
+    }
+  </nz-layout>
+</nz-layout>

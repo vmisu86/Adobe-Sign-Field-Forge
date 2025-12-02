@@ -1,0 +1,25 @@
+<div class="sidebar-content">
+  <div class="sidebar-header">
+    <h3>Properties</h3>
+  </div>
+
+  <!-- Selected Field Properties -->
+  @if(selectedField){
+  <div class="properties-panel">
+    <app-field-property-form
+      [field]="selectedField"
+      (fieldUpdated)="onFieldUpdated($event)"
+      (deleteClicked)="onFieldDeleted()">
+    </app-field-property-form>
+  </div>
+  }
+
+  <!-- No Selection State -->
+  <div *ngIf="!selectedField" class="no-selection">
+    <nz-empty nzNotFoundContent="No field selected" [nzNotFoundImage]="'simple'">
+      <ng-template #desc>
+        <p>Select a field to view and edit its properties</p>
+      </ng-template>
+    </nz-empty>
+  </div>
+</div>

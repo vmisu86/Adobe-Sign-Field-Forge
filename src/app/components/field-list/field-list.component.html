@@ -1,0 +1,16 @@
+<div class="fields-list-container" *ngIf="fieldsOnCurrentPage.length > 0">
+  <div class="group-label">Fields on Page {{ currentPage }}</div>
+  <nz-list [nzDataSource]="fieldsOnCurrentPage" nzSize="small">
+    <nz-list-item *ngFor="let field of fieldsOnCurrentPage"
+      [class.selected]="isSelected(field)"
+      (click)="onFieldClick(field)"
+      style="cursor: pointer;">
+      <div class="field-list-item">
+        <i nz-icon [nzType]="fieldTypeService.getFieldIcon(field)"
+          [style.color]="fieldTypeService.getFieldColor(field)"></i>
+        <span class="field-name">{{ field.name }}</span>
+        <nz-tag *ngIf="field.required" nzColor="error">Required</nz-tag>
+      </div>
+    </nz-list-item>
+  </nz-list>
+</div>

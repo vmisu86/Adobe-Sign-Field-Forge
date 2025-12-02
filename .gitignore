@@ -20,6 +20,22 @@ yarn-error.log
 .settings/
 *.sublime-workspace
 
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.slnx.sqlite
+**/v17/TestStore/**
+**/CopilotIndices/**
+**/FileContentIndex/**
+
+# Environment / local DBs
+*.db
+*.db-shm
+*.db-wal
+
+
 # Visual Studio Code
 .vscode/*
 !.vscode/settings.json
@@ -40,5 +56,4 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
-.PROJECT_ANALYSIS.md
 /PROJECT_ANALYSIS.md

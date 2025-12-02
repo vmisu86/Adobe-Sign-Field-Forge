@@ -1,6 +1,6 @@
 # FieldForge - PDF Field Mapper for Adobe Sign
 
-![PDF Field Mapper Interface](./src/assets/pdf-field-mapper-hero-image.svg)
+![PDF Field Mapper Interface](./src/assets/readme-hero.svg)
 
 A professional-grade visual PDF field mapping tool that allows you to configure Adobe Sign form fields without leaving your application. This Angular-based solution demonstrates how to embed document preparation capabilities directly into your own applications, eliminating the need to switch to Adobe Sign's interface.
 
@@ -13,6 +13,7 @@ While Adobe Sign provides its own interface for adding form fields to documents,
 ### Key Features
 
 #### Core Functionality
+
 - 📄 **Visual PDF rendering** with PDF.js
 - ✏️ **Intuitive field creation** - Click to select, click empty space to draw
 - 🎯 **Precise positioning** with coordinate grid overlay and snap-to-grid
@@ -21,6 +22,7 @@ While Adobe Sign provides its own interface for adding form fields to documents,
 - ⚡ **Undo/Redo** with full history management
 
 #### Professional UX/UI
+
 - 🎨 **Modern three-panel layout** - Field types, canvas, and properties
 - 🔍 **Smart context-aware interaction** - No mode switching needed
 - 📋 **Collapsible sidebars** for maximum workspace
@@ -28,12 +30,14 @@ While Adobe Sign provides its own interface for adding form fields to documents,
 - 📱 **Responsive design** that adapts to different screen sizes
 
 #### Data Management
+
 - 💾 **Import/Export** field configurations as JSON
 - 📊 **JSON viewer** with copy-to-clipboard functionality
 - 🔄 **Adobe Sign API-compatible** export format
 - 💼 **Configuration persistence** for workflow automation
 
 #### Enterprise Features
+
 - 🏗️ **Service-based architecture** with separation of concerns
 - 🎯 **Coordinate conversion service** for TRANSIENT/LIBRARY modes
 - 🖱️ **Field interaction service** for drag/resize operations
@@ -74,6 +78,7 @@ No mode switching, no complex interactions - just natural, intuitive field creat
 ## Architecture Highlights
 
 ### Service Layer
+
 - **CoordinateConversionService**: Handles PDF coordinate transformations
 - **FieldInteractionService**: Manages drag, resize, and selection logic
 - **CanvasRendererService**: Optimized canvas drawing operations
@@ -82,6 +87,7 @@ No mode switching, no complex interactions - just natural, intuitive field creat
 - **PdfFieldService**: Core field management and state
 
 ### Component Structure
+
 - **Standalone components**: Modern Angular architecture
 - **Clean separation**: UI, business logic, and services
 - **Type safety**: Comprehensive interfaces and models
@@ -160,6 +166,7 @@ Switch between modes using the "Coordinate System" dropdown in the header.
 ### Field Types
 
 Supported field types include:
+
 - Text fields (single and multiline)
 - Signature fields
 - Initial fields
@@ -174,8 +181,10 @@ The exported JSON format is directly compatible with Adobe Sign's `formFields` A
 
 ```javascript
 const response = await adobeSignApi.createTransientDocument({
-  fileInfo: { /* your file */ },
-  formFields: exportedFieldConfig.fields
+  fileInfo: {
+    /* your file */
+  },
+  formFields: exportedFieldConfig.fields,
 });
 ```
 
@@ -203,6 +212,7 @@ This project is provided as-is for educational and demonstration purposes.
 ## Author
 
 **Misu Varga**
+
 - Website: [misu-varga.com](https://misu-varga.com)
 - Article: [Read the full article about this project](https://misu-varga.com/blog/article/15)
 

@@ -1,0 +1,234 @@
+<!-- FieldForge README Hero (SVG) -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-label="FieldForge UI mock">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f6f8fb"/>
+      <stop offset="100%" stop-color="#eef2f7"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/>
+      <feOffset dy="3" result="off"/>
+      <feComposite in="off" in2="blur" operator="over" result="sh"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .12 0" />
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .label { font: 600 13px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif; fill: #1f2937; }
+      .muted { font: 12px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif; fill: #6b7280; }
+      .mono  { font: 12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; fill:#374151;}
+      .btn   { fill: #ffffff; stroke: #d1d5db; }
+      .btn-txt { font: 12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif; fill: #111827; }
+      .chip { fill:#e5f0ff; stroke:#c7ddff; }
+      .chip-txt { font: 11px/1 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif; fill:#1e40af; font-weight:600; }
+      .pill { fill: #f3f4f6; stroke: #e5e7eb; }
+      .h { font: 700 16px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif; fill:#111827; }
+      .sm { font: 12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif; fill:#111827; }
+    </style>
+  </defs>
+
+  <!-- App background -->
+  <rect x="0" y="0" width="1200" height="760" fill="url(#bg)"/>
+
+  <!-- Top bar -->
+  <g filter="url(#soft)">
+    <rect x="24" y="20" width="1152" height="56" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+    <!-- Logo -->
+    <rect x="40" y="33" width="26" height="26" rx="6" fill="#2563eb"/>
+    <rect x="45" y="38" width="16" height="16" rx="3" fill="#93c5fd"/>
+    <text x="76" y="51" class="label">FieldForge</text>
+
+    <!-- Toolbar buttons -->
+    <!-- Upload PDF -->
+    <g>
+      <rect class="btn" x="222" y="28" width="110" height="40" rx="8"/>
+      <text class="btn-txt" x="238" y="53">Upload PDF</text>
+    </g>
+    <!-- Import -->
+    <g>
+      <rect class="btn" x="340" y="28" width="90" height="40" rx="8"/>
+      <text class="btn-txt" x="366" y="53">Import</text>
+    </g>
+    <!-- Export -->
+    <g>
+      <rect class="btn" x="438" y="28" width="92" height="40" rx="8"/>
+      <text class="btn-txt" x="464" y="53">Export</text>
+    </g>
+    <!-- View JSON -->
+    <g>
+      <rect class="btn" x="538" y="28" width="106" height="40" rx="8"/>
+      <text class="btn-txt" x="556" y="53">View JSON</text>
+    </g>
+
+    <!-- Page controls (mock) -->
+    <g>
+      <rect class="pill" x="980" y="28" width="180" height="40" rx="20"/>
+      <text class="muted" x="995" y="53">Page</text>
+      <rect x="1038" y="36" width="44" height="24" rx="6" fill="#ffffff" stroke="#d1d5db"/>
+      <text class="sm" x="1051" y="53">1 / 4</text>
+      <circle cx="1150" cy="48" r="8" fill="#10b981"/>
+    </g>
+  </g>
+
+  <!-- Workspace containers -->
+  <!-- Left sidebar -->
+  <g filter="url(#soft)">
+    <rect x="24" y="90" width="240" height="650" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+    <text x="44" y="118" class="h">Field Types</text>
+    <rect x="40" y="130" width="200" height="32" rx="8" fill="#f9fafb" stroke="#e5e7eb"/>
+    <text x="56" y="151" class="muted">Search field types...</text>
+
+    <!-- Group: Text fields -->
+    <text x="44" y="185" class="muted">TEXT FIELDS</text>
+
+    <!-- Active item: Text Field -->
+    <g>
+      <rect x="36" y="197" width="208" height="36" rx="8" fill="#eff6ff" stroke="#93c5fd"/>
+      <rect x="48" y="206" width="18" height="18" rx="4" fill="#bfdbfe"/>
+      <text x="74" y="224" class="sm">Text Field</text>
+    </g>
+
+    <!-- Other items -->
+    <g>
+      <rect x="36" y="241" width="208" height="36" rx="8" fill="#ffffff" stroke="#e5e7eb"/>
+      <rect x="48" y="250" width="18" height="18" rx="4" fill="#e5e7eb"/>
+      <text x="74" y="268" class="sm">Multiline Text</text>
+    </g>
+    <g>
+      <rect x="36" y="285" width="208" height="36" rx="8" fill="#ffffff" stroke="#e5e7eb"/>
+      <rect x="48" y="294" width="18" height="18" rx="4" fill="#e5e7eb"/>
+      <text x="74" y="312" class="sm">Signer Name</text>
+    </g>
+
+    <!-- Group: Signature -->
+    <text x="44" y="345" class="muted">SIGNATURE</text>
+    <g>
+      <rect x="36" y="357" width="208" height="36" rx="8" fill="#ffffff" stroke="#e5e7eb"/>
+      <rect x="48" y="366" width="18" height="18" rx="4" fill="#e5e7eb"/>
+      <text x="74" y="384" class="sm">Signature</text>
+    </g>
+    <g>
+      <rect x="36" y="401" width="208" height="36" rx="8" fill="#ffffff" stroke="#e5e7eb"/>
+      <rect x="48" y="410" width="18" height="18" rx="4" fill="#e5e7eb"/>
+      <text x="74" y="428" class="sm">Initials</text>
+    </g>
+
+    <!-- Group: Date Fields -->
+    <text x="44" y="469" class="muted">DATE FIELDS</text>
+    <g>
+      <rect x="36" y="481" width="208" height="36" rx="8" fill="#ffffff" stroke="#e5e7eb"/>
+      <rect x="48" y="490" width="18" height="18" rx="4" fill="#e5e7eb"/>
+      <text x="74" y="508" class="sm">Date Field</text>
+    </g>
+    <g>
+      <rect x="36" y="525" width="208" height="36" rx="8" fill="#ffffff" stroke="#e5e7eb"/>
+      <rect x="48" y="534" width="18" height="18" rx="4" fill="#e5e7eb"/>
+      <text x="74" y="552" class="sm">Signing Date</text>
+    </g>
+
+    <!-- Group: Other -->
+    <text x="44" y="594" class="muted">OTHER FIELDS</text>
+    <g>
+      <rect x="36" y="606" width="208" height="36" rx="8" fill="#ffffff" stroke="#e5e7eb"/>
+      <rect x="48" y="615" width="18" height="18" rx="4" fill="#e5e7eb"/>
+      <text x="74" y="633" class="sm">Checkbox</text>
+    </g>
+    <g>
+      <rect x="36" y="650" width="208" height="36" rx="8" fill="#ffffff" stroke="#e5e7eb"/>
+      <rect x="48" y="659" width="18" height="18" rx="4" fill="#e5e7eb"/>
+      <text x="74" y="677" class="sm">Radio Button</text>
+    </g>
+  </g>
+
+  <!-- Center canvas -->
+  <g filter="url(#soft)">
+    <rect x="280" y="90" width="620" height="650" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+    <!-- Info banner -->
+    <rect x="300" y="108" width="580" height="32" rx="8" fill="#eef2ff" stroke="#e0e7ff"/>
+    <text x="318" y="129" class="muted">Selected: Text Field – Click on empty canvas to draw, click on fields to select</text>
+
+    <!-- PDF page -->
+    <g>
+      <rect x="340" y="160" width="500" height="600" rx="6" fill="#fbfbfc" stroke="#e5e7eb"/>
+      <!-- Page title -->
+      <text x="365" y="195" class="h">📘 Vintage Wine Tasting Booklet</text>
+
+      <!-- Section header -->
+      <g>
+        <circle cx="370" cy="230" r="8" fill="#a855f7"/>
+        <text x="388" y="235" class="label">1. Szent György-hegyi Muskotály 2005</text>
+      </g>
+
+      <!-- Selected field (blue box) -->
+      <g>
+        <rect x="600" y="260" width="220" height="120" rx="4" fill="#eaf2ff" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6 4"/>
+        <!-- handles -->
+        <rect x="596" y="256" width="8" height="8" fill="#3b82f6"/>
+        <rect x="817" y="256" width="8" height="8" fill="#3b82f6"/>
+        <rect x="596" y="376" width="8" height="8" fill="#3b82f6"/>
+        <rect x="817" y="376" width="8" height="8" fill="#3b82f6"/>
+        <!-- chip -->
+        <rect class="chip" x="610" y="268" width="54" height="20" rx="10"/>
+        <text class="chip-txt" x="618" y="283">T: TEXT</text>
+        <text class="mono" x="610" y="304">text_field_1</text>
+        <text class="muted" x="610" y="322">Signer 1</text>
+      </g>
+
+      <!-- A few lines of body text -->
+      <text x="365" y="270" class="muted">Region: Badacsony, Hungary • Type: Dry White (Muscat)</text>
+      <text x="365" y="288" class="muted">Serving Temp: 10–12°C (chilled)</text>
+
+      <!-- bullets -->
+      <circle cx="370" cy="320" r="3" fill="#9ca3af"/>
+      <text x="380" y="324" class="muted">Look at color and clarity.</text>
+      <circle cx="370" cy="342" r="3" fill="#9ca3af"/>
+      <text x="380" y="346" class="muted">Swirl gently and smell for aromatics.</text>
+      <circle cx="370" cy="364" r="3" fill="#9ca3af"/>
+      <text x="380" y="368" class="muted">Taste and note sweetness, acidity, finish.</text>
+    </g>
+
+    <!-- Page footer -->
+    <text x="570" y="742" class="muted">1</text>
+  </g>
+
+  <!-- Right properties panel -->
+  <g filter="url(#soft)">
+    <rect x="920" y="90" width="256" height="650" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+    <text x="940" y="118" class="h">Properties</text>
+
+    <!-- Card -->
+    <g>
+      <rect x="936" y="136" width="224" height="210" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+      <text x="952" y="162" class="label">Field Details</text>
+      <text x="952" y="190" class="muted">Field Name</text>
+      <rect x="948" y="200" width="200" height="32" rx="6" fill="#ffffff" stroke="#d1d5db"/>
+      <text x="956" y="221" class="sm">text_field_1</text>
+
+      <text x="952" y="242" class="muted">Type</text>
+      <rect x="948" y="252" width="200" height="28" rx="14" class="chip"/>
+      <text x="980" y="271" class="chip-txt">T: TEXT FIELD</text>
+
+      <text x="952" y="298" class="muted">Recipient</text>
+      <rect x="948" y="308" width="200" height="32" rx="6" fill="#ffffff" stroke="#d1d5db"/>
+      <text x="956" y="328" class="sm">Signer 1</text>
+    </g>
+
+    <!-- Toggles -->
+    <g>
+      <rect x="936" y="360" width="224" height="124" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+      <rect x="948" y="382" width="16" height="16" rx="3" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="972" y="395" class="sm">Required Field</text>
+      <rect x="948" y="414" width="16" height="16" rx="3" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="972" y="427" class="sm">Read Only</text>
+      <rect x="948" y="446" width="110" height="34" rx="8" fill="#fee2e2" stroke="#fecaca"/>
+      <text x="972" y="468" class="sm" style="fill:#b91c1c;font-weight:700">Delete Field</text>
+    </g>
+  </g>
+
+  <!-- Mini “fields on page” strip -->
+  <g filter="url(#soft)">
+    <rect x="280" y="750" width="620" height="0" fill="transparent"/>
+  </g>
+</svg>

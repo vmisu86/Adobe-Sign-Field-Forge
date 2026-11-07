@@ -51,6 +51,37 @@ export class CoordinateConversionService {
     return documentType === AdobeDocumentType.LIBRARY ? 1 : -1;
   }
 
+  /**
+   * The stored-space box (`left`, `top`, `width`, `height`, rounded) of a field of `size` points whose
+   * top-left corner sits at the canvas pixel `point`, moved if needed so it stays on the page.
+   * Used both for the placement preview and for a field created by a click.
+   */
+  boxFromClick(
+    point: Point,
+    size: { width: number; height: number },
+    viewport: ViewportGeometry,
+    documentType: AdobeDocumentType,
+  ): { left: number; top: number; width: number; height: number } {
+    const { width, height } = size;
+    const pageWidth = viewport.width / viewport.scale;
+    const pageHeight = this.pageHeightPoints(viewport);
+
+    const left = Math.max(0, Math.min(this.pixelsToPoints(point.x, viewport.scale), pageWidth - width));
+    const top = this.convertYCoordinate(point.y, viewport, documentType);
+    // The box hangs down from `top`, so the range that keeps it on the page depends on the origin.
+    const clampedTop =
+      documentType === AdobeDocumentType.LIBRARY
+        ? Math.max(0, Math.min(top, pageHeight - height))
+        : Math.max(height, Math.min(top, pageHeight));
+
+    return {
+      left: this.roundPoints(left),
+      top: this.roundPoints(clampedTop),
+      width: this.roundPoints(width),
+      height: this.roundPoints(height),
+    };
+  }
+
   /** Stored values keep two decimals (1/100 pt): drawing at 150% zoom would otherwise leave 15-digit numbers. */
   roundPoints(value: number): number {
     return Math.round(value * 100) / 100;

@@ -26,9 +26,16 @@ export class EditorStateService {
   readonly rightSidebarCollapsed = signal(false);
   readonly recipientIndex = signal(1);
 
-  /** Key of the field type preset that a click on empty canvas will create ('' = none). */
-  readonly selectedTypeKey = signal(this.defaultTypeKey());
+  /**
+   * The tool. '' is the Select tool: clicks select and move fields and never create one. Otherwise the
+   * key of the field type preset that dragging (or clicking) on empty canvas will create.
+   */
+  readonly selectedTypeKey = signal('');
   readonly selectedType = computed(() => this.fieldTypes.getFieldTypeByKey(this.selectedTypeKey()));
+  /** Drawing a field type (as opposed to the Select tool). */
+  readonly armed = computed(() => this.selectedType() !== undefined);
+  /** Stay on the drawing tool after a field is placed, for placing several in a row. */
+  readonly keepDrawing = signal(false);
 
   readonly selectedFieldId = signal<string | null>(null);
   /** Always the current version of the selected field, so the panel and the handles never go stale. */
@@ -38,14 +45,14 @@ export class EditorStateService {
   });
   readonly hoveredFieldId = signal<string | null>(null);
 
+  /** A field the user asked to see (from the list): the viewer scrolls to it once its page is drawn. */
+  readonly revealRequest = signal<string | null>(null);
+
   /** Bumped when a document-type change is cancelled, so the toolbar select snaps back to the real value. */
   readonly documentTypeResync = signal(0);
 
   readonly drawing = signal<DrawingGesture | null>(null);
+  /** Where the mouse is over the page, in canvas pixels; null when it is elsewhere. */
+  readonly pointer = signal<Point | null>(null);
   readonly cursor = signal('default');
-
-  private defaultTypeKey(): string {
-    const first = this.fieldTypes.getFieldTypeGroups()[0]?.items[0];
-    return first ? this.fieldTypes.keyOf(first) : '';
-  }
 }

@@ -69,6 +69,8 @@ export class FieldEditorService {
     const viewport = this.pdf.viewport();
     if (!viewport) return;
 
+    this.state.pointer.set(point);
+
     const gesture = this.interaction.getState();
     const selected = this.state.selectedField();
     const documentType = this.state.documentType();
@@ -145,6 +147,12 @@ export class FieldEditorService {
     }
   }
 
+  /** The mouse left the page: forget where it was (the placement preview and the status bar follow it). */
+  pointerLeave(): void {
+    this.state.pointer.set(null);
+    this.state.hoveredFieldId.set(null);
+  }
+
   /**
    * Abandon whatever the pointer is doing and put the field back where it was.
    * Returns true if there was something to abandon.
@@ -174,15 +182,67 @@ export class FieldEditorService {
 
   // --------------------------------------------------------------- commands
 
+  /** Switch to the Select tool: clicks select and move fields, and nothing is created. */
+  selectTool(): void {
+    this.state.selectedTypeKey.set('');
+    this.state.drawing.set(null);
+  }
+
+  /** Arm a field type to draw. Choosing the armed type again goes back to the Select tool. */
+  armType(key: string): void {
+    if (this.state.selectedTypeKey() === key) {
+      this.selectTool();
+      return;
+    }
+    this.state.selectedTypeKey.set(key);
+    this.state.selectedFieldId.set(null);
+  }
+
+  /** Arm the field type that `key` stands for. Returns false when no type uses that key. */
+  armByShortcut(key: string): boolean {
+    const preset = this.fieldTypes.getFieldTypeByShortcut(key);
+    if (!preset) return false;
+    this.state.selectedTypeKey.set(this.fieldTypes.keyOf(preset));
+    this.state.selectedFieldId.set(null);
+    return true;
+  }
+
+  /** Escape backs out one level: a running drag or resize, then the drawing tool, then the selection. */
+  escape(): void {
+    if (this.cancelGesture()) return;
+    if (this.state.armed()) {
+      this.selectTool();
+      return;
+    }
+    this.state.selectedFieldId.set(null);
+  }
+
   select(id: string | null): void {
     this.state.selectedFieldId.set(id);
   }
 
+  /** Select a field wherever it is: go to its page and ask the viewer to scroll it into view. */
+  focusField(id: string): void {
+    const field = this.fields.getFields().find((f) => f.id === id);
+    if (!field) return;
+    this.selectTool();
+    if (field.locations.pageNumber !== this.pdf.currentPage()) {
+      this.pdf.setPage(field.locations.pageNumber);
+    }
+    this.state.selectedFieldId.set(id);
+    this.state.revealRequest.set(id);
+  }
+
+  deleteField(id: string): void {
+    this.fields.deleteField(id);
+    if (this.state.selectedFieldId() === id) {
+      this.state.selectedFieldId.set(null);
+    }
+  }
+
   deleteSelected(): void {
     const selected = this.state.selectedField();
-    if (!selected) return;
-    this.fields.deleteField(selected.id);
-    this.state.selectedFieldId.set(null);
+    if (selected) this.deleteField(selected.id);
   }
 
   updateSelected(updates: Partial<Field>): void {
@@ -263,16 +323,12 @@ export class FieldEditorService {
 
     if (isClick) {
       // A bare click would otherwise leave an invisible 0 x 0 field that cannot be selected.
-      ({ width, height } = this.fieldTypes.getDefaultSize(type.inputType));
-      const pageWidth = viewport.width / scale;
-      const pageHeight = this.coords.pageHeightPoints(viewport);
-      left = Math.max(0, Math.min(this.coords.pixelsToPoints(start.x, scale), pageWidth - width));
-      top = this.coords.convertYCoordinate(start.y, viewport, documentType);
-      // Keep the whole box on the page: it hangs down from `top`.
-      top =
-        documentType === AdobeDocumentType.LIBRARY
-          ? Math.max(0, Math.min(top, pageHeight - height))
-          : Math.max(height, Math.min(top, pageHeight));
+      ({ left, top, width, height } = this.coords.boxFromClick(
+        start,
+        this.fieldTypes.getDefaultSize(type.inputType),
+        viewport,
+        documentType,
+      ));
     } else {
       left = this.coords.pixelsToPoints(Math.min(start.x, end.x), scale);
       width = this.coords.pixelsToPoints(Math.abs(end.x - start.x), scale);
@@ -297,5 +353,12 @@ export class FieldEditorService {
     };
 
     this.fields.addField(field);
+
+    // The new field is selected so it can be named straight away, and the tool goes back to Select
+    // unless the user asked to keep drawing.
+    this.state.selectedFieldId.set(field.id);
+    if (!this.state.keepDrawing()) {
+      this.state.selectedTypeKey.set('');
+    }
   }
 }

@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { EditorStateService } from '../../services/editor-state.service';
 import { FieldEditorService } from '../../services/field-editor.service';
+import { FieldListComponent } from '../field-list/field-list.component';
 import { FieldPropertyFormComponent } from '../field-property-form/field-property-form.component';
 
 @Component({
   selector: 'app-field-properties-sidebar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FieldPropertyFormComponent],
+  imports: [FieldPropertyFormComponent, FieldListComponent],
   templateUrl: './field-properties-sidebar.component.html',
 })
 export class FieldPropertiesSidebarComponent {

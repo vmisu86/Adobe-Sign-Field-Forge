@@ -29,6 +29,9 @@ describe('APP_ICONS', () => {
       'redo',
       'search',
       'delete',
+      'select',
+      'zoom-in',
+      'zoom-out',
     ];
     expect(inTemplates.filter((name) => !registered.has(name))).toEqual([]);
   });

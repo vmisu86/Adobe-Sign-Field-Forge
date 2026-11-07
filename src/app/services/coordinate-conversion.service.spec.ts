@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { AdobeDocumentType } from '../models/field.model';
-import { makeViewport, PAGE_HEIGHT_POINTS, TEST_SCALE } from '../testing/test-data';
+import { makeViewport, PAGE_HEIGHT_POINTS, PAGE_WIDTH_POINTS, TEST_SCALE } from '../testing/test-data';
 import { CoordinateConversionService } from './coordinate-conversion.service';
 
 describe('CoordinateConversionService', () => {
@@ -52,6 +52,41 @@ describe('CoordinateConversionService', () => {
       }
     });
   }
+
+  describe('boxFromClick', () => {
+    const size = { width: 100, height: 20 };
+
+    it('puts the top-left corner of the box at the click (TRANSIENT: top measured from the page bottom)', () => {
+      // 150 px across and down at 1.5x = 100 pt across and 100 pt down from the page top
+      expect(service.boxFromClick({ x: 150, y: 150 }, size, viewport, AdobeDocumentType.TRANSIENT)).toEqual({
+        left: 100,
+        top: 692,
+        width: 100,
+        height: 20,
+      });
+    });
+
+    it('measures top from the page top in LIBRARY', () => {
+      expect(service.boxFromClick({ x: 150, y: 150 }, size, viewport, AdobeDocumentType.LIBRARY).top).toBe(100);
+    });
+
+    it('moves a box that would hang off the right or bottom edge back onto the page', () => {
+      const box = service.boxFromClick({ x: 900, y: 1180 }, size, viewport, AdobeDocumentType.TRANSIENT);
+      expect(box.left + box.width).toBeLessThanOrEqual(PAGE_WIDTH_POINTS);
+      expect(box.top - box.height).toBeGreaterThanOrEqual(0);
+
+      const library = service.boxFromClick({ x: 900, y: 1180 }, size, viewport, AdobeDocumentType.LIBRARY);
+      expect(library.top + library.height).toBeLessThanOrEqual(PAGE_HEIGHT_POINTS);
+    });
+
+    it('moves a box that would hang off the left or top edge back onto the page', () => {
+      const box = service.boxFromClick({ x: -50, y: -50 }, size, viewport, AdobeDocumentType.TRANSIENT);
+      expect(box.left).toBe(0);
+      expect(box.top).toBe(PAGE_HEIGHT_POINTS);
+
+      expect(service.boxFromClick({ x: -50, y: -50 }, size, viewport, AdobeDocumentType.LIBRARY).top).toBe(0);
+    });
+  });
 
   it('rounds stored values to hundredths of a point', () => {
     expect(service.roundPoints(153.33333333333334)).toBe(153.33);

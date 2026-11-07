@@ -1,20 +1,21 @@
-<aside class="ff-panel ff-panel--right" aria-label="Field properties">
+<aside class="ff-panel ff-panel--right" aria-label="Inspector">
   <div class="ff-panel__header">
-    <h2 class="ff-panel__title">Properties</h2>
+    <h2 class="ff-panel__title">Inspector</h2>
   </div>
 
   <div class="ff-panel__body">
     @if (state.selectedField(); as field) {
-      <app-field-property-form
-        [field]="field"
-        (fieldUpdated)="editor.updateSelected($event)"
-        (deleteClicked)="editor.deleteSelected()"
-      >
-      </app-field-property-form>
-    } @else {
-      <div class="ff-empty">
-        <p class="ff-empty__text">No field selected. Click a field on the page, or in the list, to edit it.</p>
-      </div>
+      <section class="ff-section">
+        <h3 class="ff-section__label">Properties</h3>
+        <app-field-property-form
+          [field]="field"
+          (fieldUpdated)="editor.updateSelected($event)"
+          (deleteClicked)="editor.deleteSelected()"
+        >
+        </app-field-property-form>
+      </section>
     }
+
+    <app-field-list></app-field-list>
   </div>
 </aside>

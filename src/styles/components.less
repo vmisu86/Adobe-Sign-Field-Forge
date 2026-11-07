@@ -29,6 +29,7 @@
   border-bottom: 1px solid var(--ff-border);
   // Narrow windows scroll the toolbar instead of clipping its right-hand controls.
   overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .ff-toolbar__brand {
@@ -64,6 +65,10 @@
   width: 140px;
 }
 
+.ff-toolbar__zoom {
+  width: 104px;
+}
+
 .ff-toolbar__status {
   min-width: 72px;
   text-align: center;
@@ -71,23 +76,6 @@
   color: var(--ff-text-muted);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-}
-
-// ---- Banner ----------------------------------------------------------------------------------
-.ff-banner {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: var(--ff-space-3);
-  padding: var(--ff-space-2) var(--ff-space-4);
-  font-size: var(--ff-text-sm);
-  background: var(--ff-accent-tint);
-  border-bottom: 1px solid var(--ff-accent-border);
-}
-
-.ff-banner__text {
-  flex: 1;
-  min-width: 0;
 }
 
 // ---- Panel (a sidebar) -----------------------------------------------------------------------
@@ -139,7 +127,8 @@
 }
 
 // ---- Section: a labelled group inside a panel ------------------------------------------------
-.ff-section + .ff-section {
+// Sections stack with space between them, even when one sits inside a component's host element.
+.ff-panel__body > * + * {
   margin-top: var(--ff-space-5);
 }
 
@@ -219,6 +208,73 @@
   white-space: nowrap;
 }
 
+// A key hint at the right end of an option (the key that arms the tool).
+.ff-kbd,
+.ff-option__shortcut {
+  padding: 0 var(--ff-space-2);
+  font-family: var(--ff-font-mono);
+  font-size: var(--ff-text-xs);
+  font-weight: var(--ff-weight-regular);
+  line-height: 18px;
+  color: var(--ff-text-muted);
+  background: var(--ff-surface-subtle);
+  border: 1px solid var(--ff-border);
+  border-radius: var(--ff-radius-sm);
+}
+
+.ff-option__shortcut {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+// An option with an action beside it (the field list: select, and delete).
+.ff-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ff-space-1);
+
+  .ff-option {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.ff-row__action {
+  flex: 0 0 auto;
+  opacity: 0;
+}
+
+.ff-row:hover .ff-row__action,
+.ff-row:focus-within .ff-row__action,
+.ff-row:has(.is-selected) .ff-row__action {
+  opacity: 1;
+}
+
+// A touch screen has no hover, so the action is always there.
+@media (hover: none) {
+  .ff-row__action {
+    opacity: 1;
+  }
+}
+
+.ff-subhead {
+  margin: var(--ff-space-3) 0 var(--ff-space-1);
+  padding: 0 var(--ff-space-1);
+  font-size: var(--ff-text-xs);
+  font-weight: var(--ff-weight-semibold);
+  color: var(--ff-text-muted);
+}
+
+.ff-hint {
+  margin: 0;
+  font-size: var(--ff-text-sm);
+  color: var(--ff-text-muted);
+}
+
+.ff-field-filter {
+  margin-bottom: var(--ff-space-2);
+}
+
 // ---- Field kinds: set --kind for everything inside ------------------------------------------
 .ff-kind-text {
   --kind: var(--ff-field-text);
@@ -285,6 +341,76 @@
   &:focus-visible {
     outline: none;
     box-shadow: var(--ff-focus-ring);
+  }
+}
+
+// ---- Stage: the workspace plus whatever floats over it -----------------------------------------
+.ff-stage {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+// The drawing tool: shown only while a field type is armed. Its left edge carries the kind colour.
+.ff-toolchip {
+  position: absolute;
+  bottom: var(--ff-space-4);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--ff-space-3);
+  max-width: calc(100% - var(--ff-space-5));
+  padding: var(--ff-space-2) var(--ff-space-3) var(--ff-space-2) var(--ff-space-4);
+  font-size: var(--ff-text-sm);
+  white-space: nowrap;
+  background: var(--ff-surface);
+  border: 1px solid var(--ff-border);
+  border-left: 4px solid var(--kind);
+  border-radius: var(--ff-radius-lg);
+  box-shadow: var(--ff-shadow-md);
+  transform: translateX(-50%);
+}
+
+.ff-toolchip__icon {
+  font-size: 18px;
+  color: var(--kind);
+}
+
+.ff-toolchip__done {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ff-space-2);
+  padding: var(--ff-space-1) var(--ff-space-2);
+  font: inherit;
+  color: var(--ff-text);
+  background: var(--ff-surface-subtle);
+  border: 1px solid var(--ff-border);
+  border-radius: var(--ff-radius-sm);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--ff-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--ff-focus-ring);
+  }
+}
+
+.ff-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ff-space-2);
+  color: var(--ff-text-muted);
+  cursor: pointer;
+
+  input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--ff-accent);
   }
 }
 
@@ -407,6 +533,28 @@
 .ff-callout--danger {
   color: var(--ff-danger);
   background: var(--ff-danger-tint);
+}
+
+// ---- Status bar --------------------------------------------------------------------------------
+.ff-statusbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--ff-space-4);
+  height: 28px;
+  padding: 0 var(--ff-space-4);
+  font-size: var(--ff-text-xs);
+  color: var(--ff-text-muted);
+  background: var(--ff-surface);
+  border-top: 1px solid var(--ff-border);
+}
+
+.ff-statusbar__item {
+  white-space: nowrap;
+}
+
+.ff-statusbar__spacer {
+  flex: 1;
 }
 
 // ---- Small utilities -------------------------------------------------------------------------

@@ -28,6 +28,7 @@ export class FieldTypeService {
     // Text fields
     {
       label: 'Text Field',
+      shortcut: 'T',
       inputType: FormFieldInputType.TEXT_FIELD,
       contentType: FormFieldContentType.DATA,
       icon: 'font-size',
@@ -37,6 +38,7 @@ export class FieldTypeService {
     },
     {
       label: 'Multiline Text',
+      shortcut: 'M',
       inputType: FormFieldInputType.MULTILINE,
       contentType: FormFieldContentType.DATA,
       icon: 'file-text',
@@ -46,6 +48,7 @@ export class FieldTypeService {
     },
     {
       label: 'Signer Name',
+      shortcut: 'N',
       inputType: FormFieldInputType.TEXT_FIELD,
       contentType: FormFieldContentType.SIGNER_NAME,
       icon: 'user',
@@ -55,6 +58,7 @@ export class FieldTypeService {
     },
     {
       label: 'Signer Email',
+      shortcut: 'E',
       inputType: FormFieldInputType.TEXT_FIELD,
       contentType: FormFieldContentType.SIGNER_EMAIL,
       icon: 'mail',
@@ -65,6 +69,7 @@ export class FieldTypeService {
     // Signature fields
     {
       label: 'Signature',
+      shortcut: 'S',
       inputType: FormFieldInputType.SIGNATURE,
       contentType: FormFieldContentType.SIGNATURE,
       icon: 'edit',
@@ -74,6 +79,7 @@ export class FieldTypeService {
     },
     {
       label: 'Initials',
+      shortcut: 'I',
       inputType: FormFieldInputType.SIGNATURE,
       contentType: FormFieldContentType.SIGNER_INITIALS,
       icon: 'highlight',
@@ -84,6 +90,7 @@ export class FieldTypeService {
     // Date fields
     {
       label: 'Date Field',
+      shortcut: 'D',
       inputType: FormFieldInputType.DATE,
       contentType: FormFieldContentType.DATA,
       icon: 'calendar',
@@ -113,6 +120,7 @@ export class FieldTypeService {
     // Other fields
     {
       label: 'Checkbox',
+      shortcut: 'C',
       inputType: FormFieldInputType.CHECKBOX,
       contentType: FormFieldContentType.DATA,
       icon: 'check-square',
@@ -122,6 +130,7 @@ export class FieldTypeService {
     },
     {
       label: 'Radio Button',
+      shortcut: 'R',
       inputType: FormFieldInputType.RADIO,
       contentType: FormFieldContentType.DATA,
       icon: 'check-circle',
@@ -187,6 +196,12 @@ export class FieldTypeService {
 
   getFieldTypeByKey(key: string): FieldTypeCombination | undefined {
     return this.fieldTypeCombinations.find((ft) => fieldTypeKey(ft) === key);
+  }
+
+  /** The preset a single key arms, if any (case-insensitive). */
+  getFieldTypeByShortcut(key: string): FieldTypeCombination | undefined {
+    const wanted = key.toUpperCase();
+    return this.fieldTypeCombinations.find((ft) => ft.shortcut === wanted);
   }
 
   getFieldKind(field: Field): FieldKind {

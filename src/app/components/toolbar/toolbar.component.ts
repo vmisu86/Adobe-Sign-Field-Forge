@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, untracked, viewChild } from '@angular/core';
 import { FormsModule, NgModel } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
@@ -10,6 +10,7 @@ import { FieldEditorService } from '../../services/field-editor.service';
 import { FileActionsService } from '../../services/file-actions.service';
 import { HistoryService } from '../../services/history.service';
 import { PdfDocumentService } from '../../services/pdf-document.service';
+import { ZOOM_STEPS } from '../../utils/zoom';
 
 @Component({
   selector: 'app-toolbar',
@@ -25,6 +26,14 @@ export class ToolbarComponent {
   protected readonly actions = inject(FileActionsService);
   protected readonly editor = inject(FieldEditorService);
   protected readonly DocumentType = AdobeDocumentType;
+  protected readonly zoomSteps = ZOOM_STEPS;
+
+  /** What the zoom select shows: 'fit' while following the window, else the chosen step. */
+  protected readonly zoomValue = computed<'fit' | number>(() => {
+    if (this.pdf.zoomMode() === 'fit-width') return 'fit';
+    const scale = this.pdf.scale();
+    return ZOOM_STEPS.find((step) => Math.abs(step - scale) < 0.001) ?? 'fit';
+  });
 
   private readonly documentTypeModel = viewChild<NgModel>('documentTypeModel');
 
@@ -38,6 +47,14 @@ export class ToolbarComponent {
         untracked(() => model.control.setValue(this.state.documentType()));
       }
     });
+  }
+
+  protected onZoomSelect(value: 'fit' | number): void {
+    if (value === 'fit') {
+      this.pdf.fitWidth();
+    } else {
+      this.pdf.setManualScale(value);
+    }
   }
 
   protected toggleLeftSidebar(): void {

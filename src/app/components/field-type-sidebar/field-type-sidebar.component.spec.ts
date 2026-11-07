@@ -1,18 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EditorStateService } from '../../services/editor-state.service';
-import { PdfFieldService } from '../../services/pdf-field.service';
-import { makeField } from '../../testing/test-data';
+import { FieldTypeService } from '../../services/field-type.service';
 import { provideTestApp } from '../../testing/test-providers';
 import { FieldTypeSidebarComponent } from './field-type-sidebar.component';
 
-describe('FieldTypeSidebarComponent', () => {
+describe('FieldTypeSidebarComponent (the tool palette)', () => {
   let fixture: ComponentFixture<FieldTypeSidebarComponent>;
   let host: HTMLElement;
+  let state: EditorStateService;
 
-  const labels = () =>
-    Array.from(
-      host.querySelectorAll('.ff-panel__body > .ff-section .ff-option:not(.ff-option--compact) .ff-option__label'),
-    ).map((el) => el.textContent?.trim());
+  const options = () => Array.from(host.querySelectorAll<HTMLButtonElement>('button.ff-option'));
+  const option = (label: string) => options().find((el) => el.textContent?.includes(label))!;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -21,60 +19,52 @@ describe('FieldTypeSidebarComponent', () => {
     }).compileComponents();
     fixture = TestBed.createComponent(FieldTypeSidebarComponent);
     host = fixture.nativeElement;
+    state = TestBed.inject(EditorStateService);
     fixture.detectChanges();
   });
 
-  it('lists every preset under its group', () => {
-    expect(labels()).toContain('Text Field');
-    expect(labels()).toContain('Signature');
-    expect(labels()).toContain('Radio Button');
-    expect(Array.from(host.querySelectorAll('.ff-section__label')).map((el) => el.textContent?.trim())).toContain(
-      'Signature Fields',
-    );
+  it('shows the Select tool and every field type at once, with their keys', () => {
+    const presets = TestBed.inject(FieldTypeService).getFieldTypeCombinations();
+    expect(options().length).toBe(presets.length + 1); // + Select
+
+    expect(option('Select').textContent).toContain('V');
+    expect(option('Text Field').textContent).toContain('T');
+    expect(option('Signature').textContent).toContain('S');
   });
 
-  it('filters by the search box and hides groups with no match', async () => {
-    const input = host.querySelector('input')!;
-    input.value = 'sign';
-    input.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    expect(labels()).toEqual(['Signer Name', 'Signer Email', 'Signature', 'Signing Date']);
-    expect(host.textContent).not.toContain('Other Fields');
+  it('groups the types under their headings', () => {
+    const headings = Array.from(host.querySelectorAll('.ff-section__label')).map((el) => el.textContent?.trim());
+    expect(headings).toEqual(['Text Fields', 'Signature Fields', 'Date Fields', 'Other Fields']);
   });
 
-  it('selects a preset when its card is clicked and marks it', () => {
-    const state = TestBed.inject(EditorStateService);
-    const card = Array.from(host.querySelectorAll<HTMLElement>('button.ff-option')).find((el) =>
-      el.textContent?.includes('Checkbox'),
-    )!;
+  it('starts on Select', () => {
+    expect(option('Select').getAttribute('aria-pressed')).toBe('true');
+    expect(option('Text Field').getAttribute('aria-pressed')).toBe('false');
+  });
 
-    card.click();
+  it('picking a type arms it and marks it; Select is then not pressed', () => {
+    option('Checkbox').click();
     fixture.detectChanges();
 
     expect(state.selectedType()?.label).toBe('Checkbox');
-    expect(card.classList).toContain('is-selected');
-    expect(card.getAttribute('aria-pressed')).toBe('true');
+    expect(option('Checkbox').getAttribute('aria-pressed')).toBe('true');
+    expect(option('Checkbox').classList).toContain('is-selected');
+    expect(option('Select').getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('lists the fields on the current page and selects one when clicked', () => {
-    const fields = TestBed.inject(PdfFieldService);
-    const state = TestBed.inject(EditorStateService);
-    fields.addField(makeField({ id: 'a', name: 'first' }), false);
-    fields.addField(
-      makeField({ id: 'b', name: 'second', locations: { pageNumber: 2, left: 1, top: 1, width: 1, height: 1 } }),
-      false,
-    );
-    fixture.detectChanges();
+  it('picking the armed type again, or Select, returns to Select', () => {
+    option('Checkbox').click();
+    option('Checkbox').click();
+    expect(state.armed()).toBeFalse();
 
-    const names = Array.from(host.querySelectorAll('.ff-option--compact .ff-option__label')).map((el) =>
-      el.textContent?.trim(),
-    );
-    expect(names).toEqual(['first']);
+    option('Signature').click();
+    option('Select').click();
+    expect(state.armed()).toBeFalse();
+  });
 
-    host.querySelector<HTMLElement>('.ff-option--compact')!.click();
-    expect(state.selectedFieldId()).toBe('a');
+  it('colours each type icon with its kind', () => {
+    expect(option('Signature').classList).toContain('ff-kind-signature');
+    expect(option('Date Field').classList).toContain('ff-kind-date');
+    expect(option('Radio Button').classList).toContain('ff-kind-choice');
   });
 });

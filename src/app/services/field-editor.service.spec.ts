@@ -29,8 +29,13 @@ describe('FieldEditorService', () => {
     history = TestBed.inject(HistoryService);
   }
 
+  const TEXT_KEY = 'text field_text_field_data';
+
   describe('creating fields', () => {
-    beforeEach(() => setup());
+    beforeEach(() => {
+      setup();
+      editor.armType(TEXT_KEY);
+    });
 
     it('draws a field by dragging, converting pixels to points', () => {
       editor.pointerDown({ x: 150, y: 150 });
@@ -197,6 +202,7 @@ describe('FieldEditorService', () => {
     });
 
     it('cancels a half-drawn field', () => {
+      editor.armType(TEXT_KEY);
       editor.pointerDown({ x: 20, y: 20 });
       expect(state.drawing()).not.toBeNull();
       expect(editor.cancelGesture()).toBeTrue();
@@ -211,6 +217,136 @@ describe('FieldEditorService', () => {
       editor.pointerMove({ x: 20, y: 20 });
       expect(state.hoveredFieldId()).toBeNull();
       expect(state.cursor()).toBe('default');
+    });
+  });
+
+  describe('tools', () => {
+    beforeEach(() => setup());
+
+    it('starts on the Select tool, where a drag on empty canvas draws nothing', () => {
+      expect(state.armed()).toBeFalse();
+      editor.pointerDown({ x: 150, y: 150 });
+      editor.pointerUp({ x: 300, y: 225 });
+      expect(state.drawing()).toBeNull();
+      expect(fields.fields()).toEqual([]);
+    });
+
+    it('goes back to Select after one field and selects it, so it can be named at once', () => {
+      editor.armType(TEXT_KEY);
+      editor.pointerDown({ x: 150, y: 150 });
+      editor.pointerUp({ x: 300, y: 225 });
+
+      expect(state.armed()).toBeFalse();
+      expect(state.selectedFieldId()).toBe(fields.fields()[0].id);
+    });
+
+    it('stays armed when Keep drawing is on, so several fields can be placed in a row', () => {
+      state.keepDrawing.set(true);
+      editor.armType(TEXT_KEY);
+      editor.pointerDown({ x: 150, y: 150 });
+      editor.pointerUp({ x: 151, y: 150 });
+      editor.pointerDown({ x: 400, y: 150 });
+      editor.pointerUp({ x: 401, y: 150 });
+
+      expect(fields.fields().length).toBe(2);
+      expect(state.armed()).toBeTrue();
+    });
+
+    it('arms a type, and choosing the same type again returns to Select', () => {
+      editor.armType(TEXT_KEY);
+      expect(state.selectedType()?.label).toBe('Text Field');
+      editor.armType(TEXT_KEY);
+      expect(state.armed()).toBeFalse();
+    });
+
+    it('arming a type clears the selection, so the next click draws instead of editing', () => {
+      fields.addField(makeField({ id: 'a' }), false);
+      state.selectedFieldId.set('a');
+      editor.armType(TEXT_KEY);
+      expect(state.selectedFieldId()).toBeNull();
+    });
+
+    it('arms by shortcut key, in either case, and ignores keys no type uses', () => {
+      expect(editor.armByShortcut('s')).toBeTrue();
+      expect(state.selectedType()?.label).toBe('Signature');
+      expect(editor.armByShortcut('D')).toBeTrue();
+      expect(state.selectedType()?.label).toBe('Date Field');
+      expect(editor.armByShortcut('q')).toBeFalse();
+      expect(state.selectedType()?.label).toBe('Date Field');
+    });
+
+    it('Escape backs out one level at a time: gesture, then tool, then selection', () => {
+      fields.addField(makeField({ id: 'a' }), false);
+
+      state.selectedFieldId.set('a');
+      editor.armType(TEXT_KEY); // clears the selection
+      state.selectedFieldId.set('a');
+      editor.pointerDown({ x: 200, y: 170 }); // starts dragging field a
+      editor.pointerMove({ x: 260, y: 230 });
+      editor.escape();
+      expect(fields.fields()[0].locations.left).toBe(100); // the drag was cancelled
+      expect(state.armed()).toBeTrue(); // the tool is still armed
+
+      editor.escape();
+      expect(state.armed()).toBeFalse();
+      expect(state.selectedFieldId()).toBe('a');
+
+      editor.escape();
+      expect(state.selectedFieldId()).toBeNull();
+    });
+
+    it('tracks the mouse over the page and forgets it when it leaves', () => {
+      editor.pointerMove({ x: 12, y: 34 });
+      expect(state.pointer()).toEqual({ x: 12, y: 34 });
+      editor.pointerLeave();
+      expect(state.pointer()).toBeNull();
+    });
+  });
+
+  describe('finding a field from the list', () => {
+    beforeEach(() => {
+      setup();
+      fields.replaceFields(
+        [
+          makeField({ id: 'a' }),
+          makeField({ id: 'b', locations: { pageNumber: 3, left: 5, top: 500, width: 20, height: 20 } }),
+        ],
+        false,
+      );
+    });
+
+    it('selects the field, goes to its page and asks the viewer to scroll to it', () => {
+      editor.focusField('b');
+      expect(state.selectedFieldId()).toBe('b');
+      expect(pdf.currentPage()).toBe(3);
+      expect(state.revealRequest()).toBe('b');
+    });
+
+    it('leaves the page alone when the field is already on it', () => {
+      editor.focusField('a');
+      expect(pdf.currentPage()).toBe(1);
+    });
+
+    it('drops the drawing tool, because the user is now working with an existing field', () => {
+      editor.armType(TEXT_KEY);
+      editor.focusField('a');
+      expect(state.armed()).toBeFalse();
+    });
+
+    it('ignores an id that does not exist', () => {
+      editor.focusField('nope');
+      expect(state.selectedFieldId()).toBeNull();
+      expect(state.revealRequest()).toBeNull();
+    });
+
+    it('deletes any field by id, and only deselects when it was the selected one', () => {
+      state.selectedFieldId.set('a');
+      editor.deleteField('b');
+      expect(state.selectedFieldId()).toBe('a');
+      expect(fields.fields().map((f) => f.id)).toEqual(['a']);
+
+      editor.deleteField('a');
+      expect(state.selectedFieldId()).toBeNull();
     });
   });
 

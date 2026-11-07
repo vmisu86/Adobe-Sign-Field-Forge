@@ -38,6 +38,7 @@ src/app/
     field.model.ts                 Field, enums (Adobe Sign's names), IFormFieldGeneratorViewModel (the Adobe export shape), fieldTypeKey()
     pdf.types.ts                   PdfDocument / PdfViewport aliases of pdfjs-dist types; ViewportGeometry (the 4 viewport members the maths uses)
   utils/
+    zoom.ts                        PURE: zoom steps, fitWidthScale, nextZoomStep, sizeCanvas (backing store at the pixel ratio)
     field-io.ts                    PURE: buildConfigFile, toAdobeFormFields, parseImport (validation), createFieldId
     file-transfer.ts               browser glue: downloadJson, pickFile, pickJsonFile
   services/                        all providedIn: 'root'
@@ -54,7 +55,7 @@ src/app/
     theme.service.ts               reads the --ff-* design tokens for canvas code (a canvas cannot use CSS variables)
   components/
     pdf-viewer/                    layout + the two canvases; turns DOM events into canvas points and paints; keyboard shortcuts
-    toolbar/  field-type-sidebar/  field-properties-sidebar/  field-list/  field-property-form/
+    toolbar/  status-bar/  field-type-sidebar/ (the tool palette)  field-properties-sidebar/ (the inspector)  field-list/  field-property-form/
   icons.ts                         the Ant Design icons that are registered (see Gotchas)
   (src/styles/)                    the design system: tokens.less, ant-theme.less, base.less, components.less (see DESIGN.md)
   testing/                         test-data (makeField, makeViewport), fake-pdf-document, test-providers
@@ -65,7 +66,7 @@ Data flow: mouse event on the overlay canvas → `PdfViewerComponent` (canvas co
 
 ### Coordinates (the part most likely to be broken by a careless edit)
 
-- Fields are stored **in PDF points**, not pixels: `pixels / viewport.scale` (scale is `RENDER_SCALE = 1.5`). Pixels exist only while the
+- Fields are stored **in PDF points**, not pixels: `pixels / viewport.scale` (scale is whatever the zoom is: fit-to-width by default, see `PdfDocumentService`). Pixels exist only while the
   mouse is down.
 - `top` is always the distance of the field's **top edge** from an origin edge, and which edge depends on `AdobeDocumentType`:
   **TRANSIENT (default): the bottom of the page** (`pageHeight − y/scale`); **LIBRARY: the top of the page** (`y/scale`). `left`,
@@ -91,6 +92,17 @@ Data flow: mouse event on the overlay canvas → `PdfViewerComponent` (canvas co
   (then history is cleared, as for a remap).
 - Enum values (`FormFieldInputType`, `FormFieldContentType`, `AdobeDocumentType`) are Adobe Sign's names and form a public contract.
   Do not rename them without being asked.
+
+### Tools and zoom
+
+- `EditorStateService.selectedTypeKey` is the tool: `''` is **Select** (clicks select and move, never create); a preset key is **Draw that type**.
+  Picking a type arms it (picking it again, `V`, `Esc` or Done returns to Select). A field made while armed is selected, and the tool drops back to
+  Select unless `keepDrawing` is on. Keys: `V` and one letter per preset (`FieldTypeCombination.shortcut`; unique, never `V`).
+- `FieldEditorService.escape()` backs out one level: running drag/resize, then the drawing tool, then the selection.
+- Zoom lives in `PdfDocumentService`: `zoomMode` (`fit-width` | `manual`), `manualScale`, `availableWidth` (set by a ResizeObserver in the viewer).
+  The viewer re-renders when `scaleInput()` changes. The canvases are sized at the screen's pixel ratio (`sizeCanvas`), and the overlay is painted
+  in CSS pixels under a `setTransform(pixelRatio)`. Mouse coordinates are CSS pixels, so no extra conversion is needed.
+- Selecting a field from the list calls `focusField`: it selects, changes page and sets `revealRequest`; the viewer scrolls once that page is drawn.
 
 ## Rules
 

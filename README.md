@@ -15,7 +15,7 @@ While Adobe Sign provides its own interface for adding form fields to documents,
 #### Core Functionality
 
 - 📄 **Visual PDF rendering** with PDF.js
-- ✏️ **Intuitive field creation** - Click to select, click empty space to draw
+- ✏️ **Explicit tools** - Select by default; pick a field type (or press its key) to draw one
 - 🎯 **Precise positioning** with coordinate grid overlay and snap-to-grid
 - 📝 **Complete Adobe Sign field support** (text, signature, date, checkbox, radio, etc.)
 - 🔄 **Drag & resize** fields with visual handles
@@ -46,17 +46,19 @@ While Adobe Sign provides its own interface for adding form fields to documents,
 
 ## How It Works
 
-FieldForge uses an intuitive context-aware interaction model:
+FieldForge has two tools, and the one you are on is always visible:
 
-1. **Select a field type** from the left sidebar
-2. **Click on the PDF canvas**:
-   - Click on **empty space** → Creates a new field of the selected type
-   - Click on **existing field** → Selects it for editing/moving
-3. **Resize or move** selected fields with visual handles
-4. **Configure properties** in the right sidebar
-5. **Export** your field configuration to JSON for Adobe Sign API
-
-No mode switching, no complex interactions - just natural, intuitive field creation!
+1. **Select** (the default, key `V`): click a field to select it, drag it to move it, drag its handles to resize it.
+   Clicking empty space only deselects; nothing is created by accident.
+2. **Draw a field**: pick a type in the left panel (or press its key, e.g. `T` for Text Field, `S` for Signature).
+   A floating chip says what you are drawing, and a dashed preview follows the mouse. **Drag** on the page to draw the box,
+   or **click** to drop a default-size one. The tool then returns to Select with the new field selected, so you can name it
+   straight away. Tick **Keep drawing** to place several in a row; `Esc` or **Done** leaves the tool.
+3. **Inspector** (right): the selected field's properties, and a list of every field in the document, grouped by page.
+   Pick one to jump to its page. Use the filter once the list gets long.
+4. **Zoom**: the page fits the window width by default. Zoom with the toolbar, `+` / `-`, or Ctrl+wheel; `0` fits the width again.
+   The status bar shows the coordinate system, the page size, the mouse position in the same numbers a field stores, and the zoom.
+5. **Export** your field configuration to JSON for the Adobe Sign API.
 
 ## Use Cases
 
@@ -157,7 +159,9 @@ ng serve
 - `Ctrl+Z`: Undo
 - `Ctrl+Shift+Z` or `Ctrl+Y`: Redo
 - `Delete` / `Backspace`: Delete the selected field (not while typing in a form field)
-- `Esc`: Cancel a drag or resize, otherwise deselect
+- `Esc`: Cancel a drag or resize, then leave the drawing tool, then deselect
+- `V`: Select tool. `T` Text, `M` Multiline, `N` Signer name, `E` Signer email, `S` Signature, `I` Initials, `D` Date, `C` Checkbox, `R` Radio: draw that field type
+- `+` / `-`: Zoom in / out. `0`: fit the page width. `Ctrl`+wheel: zoom
 
 ## Configuration
 

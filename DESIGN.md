@@ -58,7 +58,7 @@ A field's kind comes from its preset (`FieldKind` in `field.model.ts`). Template
 - Space (4px grid): `--ff-space-1` 4 · `-2` 8 · `-3` 12 · `-4` 16 · `-5` 24 · `-6` 32 · `-7` 48.
 - Radius: `--ff-radius-sm` 4 (icon buttons) · `--ff-radius-md` 6 (options, inputs via Ant, code block) · `--ff-radius-lg` 10 (unused). Chips are fully round.
 - Borders: 1px `--ff-border` everywhere. Field outlines on the canvas are 1.5px, 2px when hovered or selected.
-- Shadows: `--ff-shadow-page` (the PDF sheet) is the only one in use; `--ff-shadow-sm` and `--ff-shadow-md` are defined for popovers and unused.
+- Shadows: `--ff-shadow-page` (the PDF sheet) and `--ff-shadow-md` (the floating drawing chip) are in use; `--ff-shadow-sm` is defined and unused.
 - Focus: `--ff-focus-ring` (2px surface gap + 2px accent) on `.ff-option` and `.ff-icon-button`; everything else gets a 2px accent outline.
 - Motion: `--ff-duration` 120ms, `--ff-ease` `cubic-bezier(0.2, 0, 0, 1)`, only for hover colour changes. `prefers-reduced-motion` turns it off.
 
@@ -70,12 +70,15 @@ Compose these; do not write component-level styles. Names follow `.ff-block`, `.
 | ------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
 | `ff-app`, `ff-app__body`                               | full-height shell: toolbar, optional banner, then panels and workspace                        |
 | `ff-toolbar` + `__brand`, `__group`, `__divider`, `__status`, `__select` | the top bar; scrolls sideways instead of clipping                              |
-| `ff-banner` + `__text`                                 | one-line info strip under the toolbar (the armed field type)                                  |
-| `ff-panel` `--left` / `--right` + `__header`, `__title`, `__tools`, `__body` | a sidebar: fixed width (`--ff-sidebar-left` 264, `-right` 300), scrolling body  |
+| `ff-panel` `--left` / `--right` + `__header`, `__title`, `__tools`, `__body` | a sidebar: fixed width (`--ff-sidebar-left` 224, `-right` 300), scrolling body  |
 | `ff-section` + `__label`                               | a labelled group inside a panel body; uppercase 12px muted label                              |
 | `ff-stack`                                             | vertical list with 8px gaps                                                                   |
 | `ff-option` (+ `--compact`, `.is-selected`)            | a selectable row; use a `<button type="button">` with `aria-pressed`. States: hover, focus ring, selected (accent tint + border) |
-| `ff-option__icon`, `ff-option__label`                  | icon in the kind colour; label that truncates                                                 |
+| `ff-option__icon`, `ff-option__label`, `ff-option__shortcut` | icon in the kind colour; label that truncates; the key that arms the tool, at the right end |
+| `ff-row` + `ff-row__action`                            | an option with an action beside it (delete); the action shows on hover, focus or selection, and always on touch |
+| `ff-subhead`, `ff-hint`, `ff-field-filter`             | small group heading, muted helper text, filter input in a panel                                |
+| `ff-stage`, `ff-toolchip` (+ `__icon`, `__done`), `ff-check` | the workspace plus what floats over it; the drawing-tool chip (kind colour on its left edge); a native checkbox with accent |
+| `ff-statusbar` (+ `__item`, `__spacer`), `ff-kbd`      | the 28px strip under the editor; a key-cap                                                    |
 | `ff-kind-text` / `-signature` / `-date` / `-choice`    | sets `--kind` for everything inside                                                           |
 | `ff-chip` (+ `--kind`, `--danger`)                     | small pill: neutral, kind-coloured (type tag), danger ("Required")                            |
 | `ff-icon-button`                                       | 28px borderless button (close)                                                                |
@@ -93,9 +96,9 @@ outline, white handles with accent border, coordinates below; while something is
 
 ## Layout
 
-- Shell: toolbar (`--ff-toolbar-height` 56px) over a row of left panel (264), workspace (flexible), right panel (300). Panels collapse from the toolbar.
+- Shell: toolbar (`--ff-toolbar-height` 56px), then a row of left panel (224, the tool palette), stage (flexible: the scrolling workspace and the floating tool chip), right panel (300, the inspector), then the status bar. Panels collapse from the toolbar.
 - The PDF sheet is centred with `margin: 0 auto` inside `ff-page` (32px padding); a page wider than the window scrolls from its left edge.
-- Zoom is fixed at 150% (`RENDER_SCALE`); there are no breakpoints yet. Below about 1100px the toolbar scrolls and the canvas gets narrow.
+- Zoom: the page is fitted to the workspace width by default (and refitted when the window or a panel is resized); the toolbar offers 25%–400% steps, `+` `-` `0` and Ctrl+wheel. The canvas is rendered at the screen's pixel ratio. There are no breakpoints yet; below about 1100px the panels squeeze the page and the toolbar scrolls.
 
 ## Do's and Don'ts
 
@@ -119,9 +122,9 @@ four `--ff-field-*` colours, and they must never swap roles. Run `npm run check`
 
 ## Open questions
 
-- **Tokens defined but unused:** `--ff-text-subtle`, `--ff-success`, `--ff-warning`, `--ff-weight-regular`, `--ff-weight-medium`, `--ff-radius-lg`,
-  `--ff-radius-field`, `--ff-shadow-sm`, `--ff-shadow-md`. Suggest keeping success, warning and the shadows for the next dialogs and toasts, and
-  deleting `--ff-radius-field` unless the canvas boxes get rounded corners.
+- **Tokens defined but unused:** `--ff-text-subtle`, `--ff-success`, `--ff-warning`, `--ff-weight-regular`, `--ff-weight-medium`,
+  `--ff-radius-field`, `--ff-shadow-sm`. Suggest keeping success, warning and the shadow for the next dialogs and toasts, and deleting
+  `--ff-radius-field` unless the canvas boxes get rounded corners.
 - **Same value, two roles:** `--ff-bg-app` and `--ff-surface-subtle` are both `#f6f8fa`. Suggest keeping both so they can diverge (a dark theme will need that).
 - **Ant Design leftovers:** about 15 uses of the old blue `#1890ff` remain inside ng-zorro's compiled CSS, for components this app does not use
   (progress, steps). They are not rendered. If one of those components is added, check its colour.

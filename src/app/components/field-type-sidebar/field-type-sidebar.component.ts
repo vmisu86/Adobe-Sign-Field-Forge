@@ -1,40 +1,31 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzInputModule } from 'ng-zorro-antd/input';
 import { FieldTypeCombination } from '../../models/field.model';
 import { EditorStateService } from '../../services/editor-state.service';
+import { FieldEditorService } from '../../services/field-editor.service';
 import { FieldTypeService } from '../../services/field-type.service';
-import { FieldListComponent } from '../field-list/field-list.component';
 
+/** The tool palette: the Select tool, then every field type, all visible at once. */
 @Component({
   selector: 'app-field-type-sidebar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, NzInputModule, NzIconModule, FieldListComponent],
+  imports: [NzIconModule],
   templateUrl: './field-type-sidebar.component.html',
 })
 export class FieldTypeSidebarComponent {
   protected readonly fieldTypeService = inject(FieldTypeService);
   protected readonly state = inject(EditorStateService);
+  private readonly editor = inject(FieldEditorService);
 
-  protected readonly searchFieldType = signal('');
+  protected readonly groups = this.fieldTypeService.getFieldTypeGroups();
 
-  protected readonly filteredFieldTypeGroups = computed(() => {
-    const groups = this.fieldTypeService.getFieldTypeGroups();
-    const search = this.searchFieldType().trim().toLowerCase();
-    if (!search) return groups;
-
-    return groups
-      .map((group) => ({
-        ...group,
-        items: group.items.filter((item) => item.label.toLowerCase().includes(search)),
-      }))
-      .filter((group) => group.items.length > 0);
-  });
+  protected selectTool(): void {
+    this.editor.selectTool();
+  }
 
   protected selectFieldType(preset: FieldTypeCombination): void {
-    this.state.selectedTypeKey.set(this.fieldTypeService.keyOf(preset));
+    this.editor.armType(this.fieldTypeService.keyOf(preset));
   }
 
   protected isSelected(preset: FieldTypeCombination): boolean {

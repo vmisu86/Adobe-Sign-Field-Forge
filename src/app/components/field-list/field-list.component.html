@@ -1,22 +1,54 @@
-@if (fieldsOnCurrentPage().length > 0) {
-  <section class="ff-section">
-    <h3 class="ff-section__label">Fields on Page {{ pdf.currentPage() }}</h3>
-    <div class="ff-stack">
-      @for (field of fieldsOnCurrentPage(); track field.id) {
-        <button
-          type="button"
-          class="ff-option ff-option--compact ff-kind-{{ fieldTypeService.getFieldKind(field) }}"
-          [class.is-selected]="state.selectedFieldId() === field.id"
-          [attr.aria-pressed]="state.selectedFieldId() === field.id"
-          (click)="editor.select(field.id)"
-        >
-          <i class="ff-option__icon" nz-icon [nzType]="fieldTypeService.getFieldIcon(field)"></i>
-          <span class="ff-option__label">{{ field.name }}</span>
-          @if (field.required) {
-            <span class="ff-chip ff-chip--danger">Required</span>
-          }
-        </button>
-      }
-    </div>
-  </section>
-}
+<section class="ff-section">
+  <h3 class="ff-section__label">All fields ({{ total() }})</h3>
+
+  @if (total() === 0) {
+    <p class="ff-hint">No fields yet. Pick a field type on the left, then drag on the page to draw it.</p>
+  } @else {
+    @if (showFilter()) {
+      <input
+        nz-input
+        class="ff-field-filter"
+        type="search"
+        placeholder="Filter by name"
+        aria-label="Filter fields by name"
+        [ngModel]="filter()"
+        (ngModelChange)="filter.set($event)"
+      />
+    }
+
+    @for (group of groups(); track group.page) {
+      <h4 class="ff-subhead">Page {{ group.page }}</h4>
+      <div class="ff-stack">
+        @for (field of group.fields; track field.id) {
+          <div class="ff-row">
+            <button
+              type="button"
+              class="ff-option ff-option--compact ff-kind-{{ fieldTypeService.getFieldKind(field) }}"
+              [class.is-selected]="state.selectedFieldId() === field.id"
+              [attr.aria-pressed]="state.selectedFieldId() === field.id"
+              (click)="editor.focusField(field.id)"
+            >
+              <i class="ff-option__icon" nz-icon [nzType]="fieldTypeService.getFieldIcon(field)"></i>
+              <span class="ff-option__label">{{ field.name }}</span>
+              @if (field.required) {
+                <span class="ff-chip ff-chip--danger">Required</span>
+              }
+            </button>
+            <button
+              type="button"
+              class="ff-icon-button ff-row__action"
+              [attr.aria-label]="'Delete ' + field.name"
+              (click)="editor.deleteField(field.id)"
+            >
+              <i nz-icon nzType="delete"></i>
+            </button>
+          </div>
+        } @empty {
+          <p class="ff-hint">No field on this page matches.</p>
+        }
+      </div>
+    } @empty {
+      <p class="ff-hint">No field matches “{{ filter() }}”.</p>
+    }
+  }
+</section>

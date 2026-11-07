@@ -1,52 +1,63 @@
 <div class="ff-app">
   <app-toolbar></app-toolbar>
 
-  <!-- Which field type a click on empty canvas will create -->
-  @if (state.selectedType(); as selectedType) {
-    <div class="ff-banner" role="status">
-      <span class="ff-banner__text">
-        <strong>{{ selectedType.label }}</strong> selected. Drag on the page to draw it, or click a field to select it.
-      </span>
-      <button type="button" class="ff-icon-button" aria-label="Stop drawing" (click)="state.selectedTypeKey.set('')">
-        <i nz-icon nzType="close"></i>
-      </button>
-    </div>
-  }
-
   <div class="ff-app__body">
     @if (!state.leftSidebarCollapsed()) {
       <app-field-type-sidebar></app-field-type-sidebar>
     }
 
-    <main class="ff-workspace">
-      @if (pdf.document()) {
-        <div class="ff-page">
-          <div class="ff-page__sheet">
-            <canvas #pdfCanvas class="ff-page__pdf"></canvas>
-            <canvas
-              #drawingCanvas
-              class="ff-page__overlay"
-              [class.is-drawing]="state.selectedType()"
-              [style.cursor]="state.cursor()"
-              (mousedown)="onMouseDown($event)"
-              (mousemove)="onMouseMove($event)"
-            ></canvas>
+    <div class="ff-stage">
+      <main #workspace class="ff-workspace" (wheel)="onWheel($event)">
+        @if (pdf.document()) {
+          <div class="ff-page">
+            <div class="ff-page__sheet">
+              <canvas #pdfCanvas class="ff-page__pdf"></canvas>
+              <canvas
+                #drawingCanvas
+                class="ff-page__overlay"
+                [class.is-drawing]="state.armed()"
+                [style.cursor]="state.cursor()"
+                aria-label="PDF page. Use the field list to select fields with the keyboard."
+                (mousedown)="onMouseDown($event)"
+                (mousemove)="onMouseMove($event)"
+                (mouseleave)="onMouseLeave()"
+              ></canvas>
+            </div>
           </div>
-        </div>
-      } @else {
-        <div class="ff-empty">
-          <h2 class="ff-empty__title">Welcome to FieldForge</h2>
-          <p class="ff-empty__text">Upload a PDF document to start adding form fields</p>
-          <button nz-button nzType="primary" nzSize="large" (click)="actions.choosePdf()">
-            <i nz-icon nzType="upload"></i>
-            Upload PDF Document
+        } @else {
+          <div class="ff-empty">
+            <h2 class="ff-empty__title">Welcome to FieldForge</h2>
+            <p class="ff-empty__text">Upload a PDF document to start adding form fields</p>
+            <button nz-button nzType="primary" nzSize="large" (click)="actions.choosePdf()">
+              <i nz-icon nzType="upload"></i>
+              Upload PDF Document
+            </button>
+          </div>
+        }
+      </main>
+
+      <!-- The drawing tool, floating over the page: what is armed, how to keep it, how to leave it -->
+      @if (pdf.document() && state.selectedType(); as armedType) {
+        <div class="ff-toolchip ff-kind-{{ armedType.kind }}" role="status">
+          <i class="ff-toolchip__icon" nz-icon [nzType]="armedType.icon"></i>
+          <span class="ff-toolchip__label">
+            Drawing <strong>{{ armedType.label }}</strong>
+          </span>
+          <label class="ff-check">
+            <input type="checkbox" [checked]="state.keepDrawing()" (change)="setKeepDrawing($event)" />
+            Keep drawing
+          </label>
+          <button type="button" class="ff-toolchip__done" (click)="stopDrawing()">
+            Done <kbd class="ff-kbd">Esc</kbd>
           </button>
         </div>
       }
-    </main>
+    </div>
 
     @if (!state.rightSidebarCollapsed()) {
       <app-field-properties-sidebar></app-field-properties-sidebar>
     }
   </div>
+
+  <app-status-bar></app-status-bar>
 </div>

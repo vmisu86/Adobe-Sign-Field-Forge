@@ -96,6 +96,35 @@
   <div class="ff-toolbar__group">
     <button
       nz-button
+      (click)="pdf.zoomOut()"
+      [disabled]="!pdf.document()"
+      nz-tooltip="Zoom out (-)"
+      aria-label="Zoom out"
+    >
+      <i nz-icon nzType="zoom-out"></i>
+    </button>
+    <nz-select
+      class="ff-toolbar__zoom"
+      [ngModel]="zoomValue()"
+      (ngModelChange)="onZoomSelect($event)"
+      [nzDisabled]="!pdf.document()"
+      aria-label="Zoom"
+    >
+      <nz-option nzValue="fit" nzLabel="Fit width"></nz-option>
+      @for (step of zoomSteps; track step) {
+        <nz-option [nzValue]="step" [nzLabel]="step * 100 + '%'"></nz-option>
+      }
+    </nz-select>
+    <button nz-button (click)="pdf.zoomIn()" [disabled]="!pdf.document()" nz-tooltip="Zoom in (+)" aria-label="Zoom in">
+      <i nz-icon nzType="zoom-in"></i>
+    </button>
+  </div>
+
+  <div class="ff-toolbar__divider"></div>
+
+  <div class="ff-toolbar__group">
+    <button
+      nz-button
       (click)="editor.undo()"
       [disabled]="!history.canUndo()"
       nz-tooltip="Undo (Ctrl+Z)"

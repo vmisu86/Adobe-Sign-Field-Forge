@@ -24,6 +24,9 @@ import {
   UndoOutline,
   UploadOutline,
   UserOutline,
+  SelectOutline,
+  ZoomInOutline,
+  ZoomOutOutline,
 } from '@ant-design/icons-angular/icons';
 
 /**
@@ -59,4 +62,7 @@ export const APP_ICONS = [
   UndoOutline,
   UploadOutline,
   UserOutline,
+  SelectOutline,
+  ZoomInOutline,
+  ZoomOutOutline,
 ];

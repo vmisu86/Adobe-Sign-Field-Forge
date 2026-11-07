@@ -61,6 +61,35 @@ describe('FieldTypeService', () => {
     });
   });
 
+  describe('shortcut keys', () => {
+    it('are single letters, each used by one preset only', () => {
+      const keys = service
+        .getFieldTypeCombinations()
+        .map((preset) => preset.shortcut)
+        .filter((key): key is string => key !== undefined);
+      expect(keys.length).toBeGreaterThan(0);
+      for (const key of keys) {
+        expect(key).toMatch(/^[A-Z]$/);
+      }
+      expect(new Set(keys).size).toBe(keys.length);
+    });
+
+    it('never use V, which is the Select tool', () => {
+      expect(service.getFieldTypeByShortcut('v')).toBeUndefined();
+    });
+
+    it('find the preset in either case', () => {
+      expect(service.getFieldTypeByShortcut('s')?.label).toBe('Signature');
+      expect(service.getFieldTypeByShortcut('S')?.label).toBe('Signature');
+      expect(service.getFieldTypeByShortcut('t')?.label).toBe('Text Field');
+    });
+
+    it('are undefined for a key nothing uses', () => {
+      expect(service.getFieldTypeByShortcut('q')).toBeUndefined();
+      expect(service.getFieldTypeByShortcut('')).toBeUndefined();
+    });
+  });
+
   it('looks up kind and icon from the matching preset and falls back otherwise', () => {
     const signature = makeField({
       inputType: FormFieldInputType.SIGNATURE,

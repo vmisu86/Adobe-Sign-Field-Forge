@@ -98,6 +98,15 @@ describe('CanvasRendererService', () => {
       expect(alphaOf({ ...idle, dimmed: true })).toBeLessThan(alphaOf(idle));
     });
 
+    it('draws a placement ghost where a click would put a field, and nowhere else', () => {
+      const { ctx } = createCanvas();
+      const box = { left: 100, top: 692, width: 100, height: 20 }; // TRANSIENT: canvas x 150..300, y 150..180
+      service.drawPlacementGhost(ctx, box, viewport, AdobeDocumentType.TRANSIENT, 'signature');
+
+      expect(ctx.getImageData(160, 165, 1, 1).data[3]).toBeGreaterThan(0); // the faint fill inside
+      expect(ctx.getImageData(40, 40, 1, 1).data[3]).toBe(0);
+    });
+
     it('draws the resize handles only for the selected field', () => {
       const handleAlpha = (state: FieldPaintState) => {
         const { ctx } = createCanvas();

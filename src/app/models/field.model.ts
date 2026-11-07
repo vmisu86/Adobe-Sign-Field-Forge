@@ -73,6 +73,8 @@ export interface FieldTypeCombination {
   contentType?: FormFieldContentType;
   icon: string;
   kind: FieldKind;
+  /** Single key that arms this preset when pressed on the canvas (case-insensitive). */
+  shortcut?: string;
   validation: string;
   validationData: string;
   readOnly?: boolean;

@@ -37,7 +37,9 @@ A developer tool and a portfolio piece, not a SaaS product.
 ## Capabilities and Constraints
 
 - Three-panel layout: field types (left), PDF canvas (centre), properties and field list (right); sidebars collapse.
-- Click empty space with a type selected to draw a field; click a field to select, drag to move, handles to resize.
+- Two tools: Select (default; clicking empty space never creates anything) and Draw a field type (pick it or press its key; drag or click on the page; back to Select after one field unless Keep drawing is on).
+- Click a field to select it, drag to move, handles to resize. The inspector lists every field by page and jumps to it.
+- The page fits the window width by default; zoom 25%–400%; a status bar shows the coordinate system, page size and the mouse position in export coordinates.
 - Grid overlay, snap-to-grid, undo/redo (`Ctrl+Z`, `Ctrl+Shift+Z` or `Ctrl+Y`), JSON viewer with copy.
 - Two exports: FieldForge's own config file (for saving and reloading work) and the bare `formFields` array for Adobe Sign. Import reads both and skips anything unusable with a note.
 - Field types: text, multiline, signer name / email, signature, initials, date variants, signing date, checkbox, radio.

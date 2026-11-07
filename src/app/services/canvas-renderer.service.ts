@@ -162,6 +162,35 @@ export class CanvasRendererService {
     ctx.restore();
   }
 
+  /**
+   * Draw where a click would put a default-size field, as a faint dashed box in the kind's colour.
+   * `box` is in stored space (points, `top` as the document type measures it).
+   */
+  drawPlacementGhost(
+    ctx: CanvasRenderingContext2D,
+    box: { left: number; top: number; width: number; height: number },
+    viewport: ViewportGeometry,
+    documentType: AdobeDocumentType,
+    kind: FieldKind,
+  ): void {
+    const color = this.theme.canvas().kinds[kind];
+    const left = box.left * viewport.scale;
+    const top = this.coordService.getCanvasPosition(box.top, viewport, documentType);
+    const width = box.width * viewport.scale;
+    const height = box.height * viewport.scale;
+
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = color;
+    ctx.fillRect(left, top, width, height);
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(left, top, width, height);
+    ctx.restore();
+  }
+
   /** Draw the dashed rectangle and its numbers while a field is being dragged out */
   drawFieldPreview(
     ctx: CanvasRenderingContext2D,

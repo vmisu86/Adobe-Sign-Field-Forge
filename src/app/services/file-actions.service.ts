@@ -117,7 +117,7 @@ export class FileActionsService {
 
     const dialog = this.modal.create({
       nzTitle: 'Field Configuration JSON',
-      nzContent: `<pre class="json-view"><code>${escapeHtml(json)}</code></pre>`,
+      nzContent: `<pre class="ff-code-block"><code>${escapeHtml(json)}</code></pre>`,
       nzWidth: 800,
       nzFooter: [
         {
@@ -165,7 +165,7 @@ export class FileActionsService {
           <li><strong>LIBRARY:</strong> from the top of the page (origin top-left)</li>
         </ul>
         <p>Every field's top is recalculated so it stays where it is on the page, and the exported values change.</p>
-        <p class="remap-warning">
+        <p class="ff-callout ff-callout--danger">
           <strong>Note:</strong> the undo history is cleared by this change.
         </p>
       `,

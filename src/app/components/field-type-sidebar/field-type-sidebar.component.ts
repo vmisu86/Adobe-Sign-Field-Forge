@@ -1,9 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzLayoutModule } from 'ng-zorro-antd/layout';
 import { FieldTypeCombination } from '../../models/field.model';
 import { EditorStateService } from '../../services/editor-state.service';
 import { FieldTypeService } from '../../services/field-type.service';
@@ -13,9 +11,8 @@ import { FieldListComponent } from '../field-list/field-list.component';
   selector: 'app-field-type-sidebar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, NzLayoutModule, NzInputModule, NzIconModule, NzCardModule, FieldListComponent],
+  imports: [FormsModule, NzInputModule, NzIconModule, FieldListComponent],
   templateUrl: './field-type-sidebar.component.html',
-  styleUrls: ['./field-type-sidebar.component.less'],
 })
 export class FieldTypeSidebarComponent {
   protected readonly fieldTypeService = inject(FieldTypeService);

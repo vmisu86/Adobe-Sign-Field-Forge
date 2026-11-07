@@ -75,7 +75,7 @@ export class FieldInteractionService {
     newLeft = this.coordService.snapToGrid(newLeft, gridSize, snapToGrid);
     newTop = this.coordService.snapToGrid(newTop, gridSize, snapToGrid);
 
-    return { left: newLeft, top: newTop };
+    return { left: this.coordService.roundPoints(newLeft), top: this.coordService.roundPoints(newTop) };
   }
 
   calculateResizeBounds(
@@ -147,7 +147,12 @@ export class FieldInteractionService {
     width = this.coordService.snapToGrid(width, gridSize, snapToGrid);
     height = this.coordService.snapToGrid(height, gridSize, snapToGrid);
 
-    return { left, top, width, height };
+    return {
+      left: this.coordService.roundPoints(left),
+      top: this.coordService.roundPoints(top),
+      width: this.coordService.roundPoints(width),
+      height: this.coordService.roundPoints(height),
+    };
   }
 
   cancelOperation(): void {

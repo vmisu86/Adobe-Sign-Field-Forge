@@ -1,0 +1,150 @@
+// Design tokens: the one place a colour, size or radius is defined.
+//
+// Each token is a LESS variable (used to theme Ant Design at build time, see ant-theme.less) and a
+// CSS custom property on :root (used by every class in components.less and read by the canvas at
+// paint time, see ThemeService). Components never contain a literal colour; scripts/check-design-tokens.mjs
+// fails the build if one slips in.
+
+// ---- Colour: neutrals ------------------------------------------------------------------------
+@ff-bg-app: #f6f8fa; // behind everything
+@ff-bg-workspace: #dde2e8; // the grey desk the PDF page lies on
+@ff-surface: #ffffff; // panels, toolbar, inputs
+@ff-surface-subtle: #f6f8fa; // panel headers, quiet fills
+@ff-surface-hover: #eef1f4; // hover on a surface
+@ff-page: #ffffff; // the PDF page itself, in every theme
+@ff-border: #d8dee4;
+@ff-border-strong: #afb8c1;
+
+// ---- Colour: text (contrast on @ff-surface: 15.8, 6.1, 4.55) ---------------------------------
+@ff-text: #1f2328;
+@ff-text-muted: #59636e;
+@ff-text-subtle: #6e7781;
+
+// ---- Colour: accent (white on accent 5.2) ----------------------------------------------------
+@ff-accent: #1668dc;
+@ff-accent-strong: #1558c0; // hover, and text on the tint
+@ff-accent-tint: #e8f1ff; // selected rows, banner
+@ff-accent-border: #a9c7f5;
+
+// ---- Colour: status --------------------------------------------------------------------------
+@ff-success: #1a7f37;
+@ff-warning: #9a6700;
+@ff-danger: #cf222e;
+@ff-danger-tint: #ffebe9;
+
+// ---- Colour: field kinds (stroke colours, each >= 3:1 on white, distinct in hue and lightness) -
+@ff-field-text: #0072b2;
+@ff-field-signature: #c2410c;
+@ff-field-date: #7c3aed;
+@ff-field-choice: #0f766e;
+
+// ---- Typography ------------------------------------------------------------------------------
+@ff-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+@ff-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+@ff-text-xs: 12px;
+@ff-text-sm: 13px;
+@ff-text-md: 14px;
+@ff-text-lg: 16px;
+@ff-text-xl: 20px;
+@ff-weight-regular: 400;
+@ff-weight-medium: 500;
+@ff-weight-semibold: 600;
+@ff-line-height: 1.5;
+
+// ---- Space (4px grid), shape, depth, motion --------------------------------------------------
+@ff-space-1: 4px;
+@ff-space-2: 8px;
+@ff-space-3: 12px;
+@ff-space-4: 16px;
+@ff-space-5: 24px;
+@ff-space-6: 32px;
+@ff-space-7: 48px;
+
+@ff-radius-sm: 4px;
+@ff-radius-md: 6px;
+@ff-radius-lg: 10px;
+@ff-radius-field: 2px; // the boxes drawn on the PDF
+
+@ff-shadow-sm: 0 1px 2px rgba(31, 35, 40, 0.08);
+@ff-shadow-md: 0 4px 12px rgba(31, 35, 40, 0.12);
+@ff-shadow-page:
+  0 2px 4px rgba(31, 35, 40, 0.12),
+  0 8px 24px rgba(31, 35, 40, 0.14);
+@ff-focus-ring:
+  0 0 0 2px @ff-surface,
+  0 0 0 4px @ff-accent;
+
+@ff-duration: 120ms;
+@ff-ease: cubic-bezier(0.2, 0, 0, 1);
+
+// ---- Layout ----------------------------------------------------------------------------------
+@ff-toolbar-height: 56px;
+@ff-sidebar-left: 264px;
+@ff-sidebar-right: 300px;
+
+:root {
+  --ff-bg-app: @ff-bg-app;
+  --ff-bg-workspace: @ff-bg-workspace;
+  --ff-surface: @ff-surface;
+  --ff-surface-subtle: @ff-surface-subtle;
+  --ff-surface-hover: @ff-surface-hover;
+  --ff-page: @ff-page;
+  --ff-border: @ff-border;
+  --ff-border-strong: @ff-border-strong;
+
+  --ff-text: @ff-text;
+  --ff-text-muted: @ff-text-muted;
+  --ff-text-subtle: @ff-text-subtle;
+
+  --ff-accent: @ff-accent;
+  --ff-accent-strong: @ff-accent-strong;
+  --ff-accent-tint: @ff-accent-tint;
+  --ff-accent-border: @ff-accent-border;
+
+  --ff-success: @ff-success;
+  --ff-warning: @ff-warning;
+  --ff-danger: @ff-danger;
+  --ff-danger-tint: @ff-danger-tint;
+
+  --ff-field-text: @ff-field-text;
+  --ff-field-signature: @ff-field-signature;
+  --ff-field-date: @ff-field-date;
+  --ff-field-choice: @ff-field-choice;
+
+  --ff-font-sans: @ff-font-sans;
+  --ff-font-mono: @ff-font-mono;
+  --ff-text-xs: @ff-text-xs;
+  --ff-text-sm: @ff-text-sm;
+  --ff-text-md: @ff-text-md;
+  --ff-text-lg: @ff-text-lg;
+  --ff-text-xl: @ff-text-xl;
+  --ff-weight-regular: @ff-weight-regular;
+  --ff-weight-medium: @ff-weight-medium;
+  --ff-weight-semibold: @ff-weight-semibold;
+  --ff-line-height: @ff-line-height;
+
+  --ff-space-1: @ff-space-1;
+  --ff-space-2: @ff-space-2;
+  --ff-space-3: @ff-space-3;
+  --ff-space-4: @ff-space-4;
+  --ff-space-5: @ff-space-5;
+  --ff-space-6: @ff-space-6;
+  --ff-space-7: @ff-space-7;
+
+  --ff-radius-sm: @ff-radius-sm;
+  --ff-radius-md: @ff-radius-md;
+  --ff-radius-lg: @ff-radius-lg;
+  --ff-radius-field: @ff-radius-field;
+
+  --ff-shadow-sm: @ff-shadow-sm;
+  --ff-shadow-md: @ff-shadow-md;
+  --ff-shadow-page: @ff-shadow-page;
+  --ff-focus-ring: @ff-focus-ring;
+
+  --ff-duration: @ff-duration;
+  --ff-ease: @ff-ease;
+
+  --ff-toolbar-height: @ff-toolbar-height;
+  --ff-sidebar-left: @ff-sidebar-left;
+  --ff-sidebar-right: @ff-sidebar-right;
+}

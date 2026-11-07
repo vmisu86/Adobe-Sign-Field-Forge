@@ -5,7 +5,8 @@ https://pdfmapper.misu-varga.com/). The user opens a PDF, draws form fields on i
 ng-zorro-antd 20 + PDF.js 5.3.31. **There is no backend**: everything runs in the browser and nothing is sent anywhere. There is no
 `HttpClient` and no router on purpose.
 
-Product intent and constraints are in `PRODUCT.md`. This file is the engineering contract; `CLAUDE.md` imports it.
+Product intent and constraints are in `PRODUCT.md`; how the UI looks (tokens, classes, rules) is in `DESIGN.md`. This file is the engineering
+contract; `CLAUDE.md` imports it. **Read `DESIGN.md` before changing any UI.**
 
 ## Commands
 
@@ -13,16 +14,17 @@ Product intent and constraints are in `PRODUCT.md`. This file is the engineering
 | --------------------------------- | ---------------------------------------------------------------------------------- |
 | Install                           | `npm install` (CI-style: `npm ci`)                                                 |
 | Dev server                        | `npm start` → http://localhost:4200/                                               |
-| Everything CI runs                | `npm run check` (lint + format check + tests + production build)                   |
+| Everything CI runs                | `npm run check` (token check + lint + format check + tests + production build)     |
+| Design-token check                | `npm run check:tokens` (no literal colours outside `src/styles/`)                  |
 | Lint                              | `npm run lint` (ESLint, angular-eslint; flat config in `eslint.config.js`)         |
 | Format                            | `npm run format` (Prettier, `.prettierrc.json`); `npm run format:check` to verify  |
 | Unit tests, once, headless        | `npm run test:ci` (Karma + Jasmine; needs Chrome; `ChromeHeadlessCI` is no-sandbox) |
 | Unit tests, watching              | `npm test`                                                                         |
 | Production build                  | `npm run build` (initial bundle ~1.95 MB against a 2 MB warning budget)            |
 
-CI (`.github/workflows/ci.yml`) runs the same four steps. Markdown is not formatted by Prettier (`.prettierignore`).
+CI (`.github/workflows/ci.yml`) runs the same five steps. Markdown is not formatted by Prettier (`.prettierignore`).
 
-All of these pass today (142 tests). If one fails after your change, it is yours.
+All of these pass today. If one fails after your change, it is yours.
 
 ## Architecture
 
@@ -49,10 +51,12 @@ src/app/
     canvas-renderer.service.ts     draws fields/handles/grid/preview on a 2D context; hit-testing
     field-type.service.ts          the preset catalogue (label, types, icon, colour, default validation, default click size), smart names
     file-actions.service.ts        open PDF, import / export, JSON dialog, the document-type confirm dialog (NzMessage / NzModal)
+    theme.service.ts               reads the --ff-* design tokens for canvas code (a canvas cannot use CSS variables)
   components/
     pdf-viewer/                    layout + the two canvases; turns DOM events into canvas points and paints; keyboard shortcuts
     toolbar/  field-type-sidebar/  field-properties-sidebar/  field-list/  field-property-form/
   icons.ts                         the Ant Design icons that are registered (see Gotchas)
+  (src/styles/)                    the design system: tokens.less, ant-theme.less, base.less, components.less (see DESIGN.md)
   testing/                         test-data (makeField, makeViewport), fake-pdf-document, test-providers
 ```
 
@@ -101,8 +105,11 @@ Data flow: mouse event on the overlay canvas → `PdfViewerComponent` (canvas co
 6. Keyboard shortcuts must ignore typing targets (inputs, textareas, selects, anything inside `.cdk-overlay-container`); see `isTypingTarget`
    in `pdf-viewer.component.ts`. Backspace in the name box once deleted the selected field.
 7. New dependencies need the owner's say-so. `pdfjs-dist` and its worker must stay on the same version.
-8. Keep user data local. No analytics, no uploads, no network calls with document content, no remote images. A PDF may be confidential.
-9. Do not commit PDFs or exported JSON from real customers; use synthetic ones.
+8. **UI follows `DESIGN.md`.** Build from the `ff-*` classes in `src/styles/components.less`; no literal colours (`npm run check:tokens` fails
+   the build), no inline colour/spacing styles, no component stylesheets. A new colour or size is a token in `tokens.less` first. A new field type
+   needs a `kind`. Selection is the accent colour and field kinds are the `--ff-field-*` colours; never swap them.
+9. Keep user data local. No analytics, no uploads, no network calls with document content, no remote images. A PDF may be confidential.
+10. Do not commit PDFs or exported JSON from real customers; use synthetic ones.
 
 ## Conventions
 
@@ -120,6 +127,11 @@ Data flow: mouse event on the overlay canvas → `PdfViewerComponent` (canvas co
 
 ## Gotchas
 
+- **Ant Design is themed from the tokens through LESS.** `styles.less` imports `ng-zorro-antd.less` (not the pre-built `.min.css`) and
+  `ant-theme.less` overrides its variables from `tokens.less`. To change the accent, fonts or radii, edit the token, not Ant's CSS. Ant's
+  compiled CSS is larger than the min.css, and the build takes a few seconds longer.
+- **The canvas reads tokens at paint time** (`ThemeService`, cached). Anything drawn with `ctx` takes its colours from there; tests load the
+  global stylesheet, so they see the real values.
 - **Icons are registered one by one** (`src/app/icons.ts`), not `import * as AllIcons` (that cost about 0.7 MB). An unregistered icon renders
   nothing and, with no `HttpClient`, logs an error. Add the icon to `APP_ICONS` when you add an `nzType="..."` or a preset `icon`, and to the
   list in `icons.spec.ts`.
@@ -128,7 +140,7 @@ Data flow: mouse event on the overlay canvas → `PdfViewerComponent` (canvas co
 - **`nz-upload` needs `HttpClient`** even if you never upload. The app does not use it: PDFs are chosen with `pickFile` (a detached
   `<input type=file>`). Do not bring `nz-upload` back without deciding to take `HttpClient` too.
 - **A footer button of an ng-zorro dialog does not close it.** `FileActionsService.showJson` closes its dialog explicitly.
-- **Dialog content passed as an HTML string loses its inline `style` attributes** (Angular sanitises it). Style it with a class in `styles.less`.
+- **Dialog content passed as an HTML string loses its inline `style` attributes** (Angular sanitises it). Style it with a class from `components.less` (`ff-code-block`, `ff-callout`).
 - **PDF.js and the overlay repaint use `requestAnimationFrame`**, which does not run in a hidden tab or a hidden Browser pane. When driving
   the app from a tool, make sure the page is visible, or the first render never finishes and the editor ignores input (no viewport yet).
 - **The PDF.js worker is served from `assets/pdfjs/`** (copied by `angular.json` from `node_modules`), resolved against `document.baseURI`.

@@ -7,7 +7,6 @@ import { PdfViewerComponent } from './components/pdf-viewer/pdf-viewer.component
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [PdfViewerComponent],
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.less'],
 })
 export class AppComponent {
   readonly title = 'FieldForge for Adobe Sign';

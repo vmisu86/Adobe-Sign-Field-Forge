@@ -53,6 +53,12 @@ describe('CoordinateConversionService', () => {
     });
   }
 
+  it('rounds stored values to hundredths of a point', () => {
+    expect(service.roundPoints(153.33333333333334)).toBe(153.33);
+    expect(service.roundPoints(99.666666)).toBe(99.67);
+    expect(service.roundPoints(100)).toBe(100);
+  });
+
   describe('snapToGrid', () => {
     it('returns the value untouched when snapping is off', () => {
       expect(service.snapToGrid(14.3, 10, false)).toBe(14.3);

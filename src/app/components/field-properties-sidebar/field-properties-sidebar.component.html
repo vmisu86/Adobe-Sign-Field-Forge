@@ -1,22 +1,20 @@
-<div class="sidebar-content">
-  <div class="sidebar-header">
-    <h3>Properties</h3>
+<aside class="ff-panel ff-panel--right" aria-label="Field properties">
+  <div class="ff-panel__header">
+    <h2 class="ff-panel__title">Properties</h2>
   </div>
 
-  @if (state.selectedField(); as field) {
-    <!-- Selected Field Properties -->
-    <div class="properties-panel">
+  <div class="ff-panel__body">
+    @if (state.selectedField(); as field) {
       <app-field-property-form
         [field]="field"
         (fieldUpdated)="editor.updateSelected($event)"
         (deleteClicked)="editor.deleteSelected()"
       >
       </app-field-property-form>
-    </div>
-  } @else {
-    <!-- No Selection State -->
-    <div class="no-selection">
-      <nz-empty nzNotFoundContent="No field selected" [nzNotFoundImage]="'simple'"></nz-empty>
-    </div>
-  }
-</div>
+    } @else {
+      <div class="ff-empty">
+        <p class="ff-empty__text">No field selected. Click a field on the page, or in the list, to edit it.</p>
+      </div>
+    }
+  </div>
+</aside>

@@ -63,13 +63,16 @@ export interface IFormFieldGeneratorViewModel {
   locations: FormFieldLocation[];
 }
 
+/** Family of a field type; decides its colour (see the --ff-field-* tokens) and its group in the sidebar. */
+export type FieldKind = 'text' | 'signature' | 'date' | 'choice';
+
 // Field type combinations for dropdown
 export interface FieldTypeCombination {
   label: string;
   inputType: FormFieldInputType;
   contentType?: FormFieldContentType;
   icon: string;
-  color: string;
+  kind: FieldKind;
   validation: string;
   validationData: string;
   readOnly?: boolean;

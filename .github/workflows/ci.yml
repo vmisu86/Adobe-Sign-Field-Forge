@@ -27,6 +27,9 @@ jobs:
 
       - run: npm ci --no-audit --no-fund
 
+      - name: Design tokens (no literal colours outside src/styles)
+        run: npm run check:tokens
+
       - name: Lint
         run: npm run lint
 

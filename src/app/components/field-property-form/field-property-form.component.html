@@ -1,142 +1,116 @@
-<nz-card nzTitle="Field Details" [nzBodyStyle]="{ padding: '16px' }">
-  <form nz-form nzLayout="vertical" (submit)="$event.preventDefault()">
-    <nz-form-item>
-      <nz-form-label nzFor="fieldName">Field Name</nz-form-label>
-      <nz-form-control>
+<form class="ff-form" (submit)="$event.preventDefault()">
+  <div class="ff-form__item">
+    <label class="ff-label" for="fieldName">Field Name</label>
+    <input
+      nz-input
+      id="fieldName"
+      name="fieldName"
+      placeholder="Enter field name"
+      [ngModel]="localField().name"
+      (ngModelChange)="onNameChange($event)"
+    />
+  </div>
+
+  <div class="ff-form__item">
+    <span class="ff-label">Type</span>
+    <span>
+      <span class="ff-chip ff-chip--kind ff-kind-{{ fieldTypeService.getFieldKind(localField()) }}">
+        <i nz-icon [nzType]="fieldTypeService.getFieldIcon(localField())"></i>
+        {{ localField().inputType }}
+      </span>
+    </span>
+  </div>
+
+  <div class="ff-form__item">
+    <span class="ff-label">Position</span>
+    <div class="ff-form__row">
+      <nz-input-wrapper nzAddonBefore="X">
         <input
           nz-input
-          id="fieldName"
-          name="fieldName"
-          placeholder="Enter field name"
-          [ngModel]="localField().name"
-          (ngModelChange)="onNameChange($event)"
+          class="ff-numeric"
+          type="number"
+          name="left"
+          aria-label="Left position in points"
+          min="0"
+          step="1"
+          [ngModel]="localField().locations.left"
+          (ngModelChange)="onLocationChange('left', $event)"
         />
-      </nz-form-control>
-    </nz-form-item>
+      </nz-input-wrapper>
 
-    <nz-form-item>
-      <nz-form-label>Type</nz-form-label>
-      <nz-form-control>
-        <nz-tag [nzColor]="fieldTypeService.getFieldColor(localField())">
-          <i nz-icon [nzType]="fieldTypeService.getFieldIcon(localField())"></i>
-          {{ localField().inputType }}
-        </nz-tag>
-      </nz-form-control>
-    </nz-form-item>
+      <nz-input-wrapper nzAddonBefore="Y">
+        <input
+          nz-input
+          class="ff-numeric"
+          type="number"
+          name="top"
+          aria-label="Top position in points"
+          min="0"
+          step="1"
+          [ngModel]="localField().locations.top"
+          (ngModelChange)="onLocationChange('top', $event)"
+        />
+      </nz-input-wrapper>
+    </div>
+  </div>
 
-    <nz-form-item>
-      <nz-form-label>Position</nz-form-label>
-      <nz-form-control>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
-          <nz-input-wrapper nzAddonBefore="X">
-            <input
-              nz-input
-              type="number"
-              name="left"
-              aria-label="Left position in points"
-              min="0"
-              step="1"
-              style="width: 100%"
-              [ngModel]="localField().locations.left"
-              (ngModelChange)="onLocationChange('left', $event)"
-            />
-          </nz-input-wrapper>
+  <div class="ff-form__item">
+    <span class="ff-label">Size</span>
+    <div class="ff-form__row">
+      <nz-input-wrapper nzAddonBefore="W">
+        <input
+          nz-input
+          class="ff-numeric"
+          type="number"
+          name="width"
+          aria-label="Width in points"
+          min="0"
+          step="1"
+          [ngModel]="localField().locations.width"
+          (ngModelChange)="onLocationChange('width', $event)"
+        />
+      </nz-input-wrapper>
 
-          <nz-input-wrapper nzAddonBefore="Y">
-            <input
-              nz-input
-              type="number"
-              name="top"
-              aria-label="Top position in points"
-              min="0"
-              step="1"
-              style="width: 100%"
-              [ngModel]="localField().locations.top"
-              (ngModelChange)="onLocationChange('top', $event)"
-            />
-          </nz-input-wrapper>
-        </div>
-      </nz-form-control>
-    </nz-form-item>
+      <nz-input-wrapper nzAddonBefore="H">
+        <input
+          nz-input
+          class="ff-numeric"
+          type="number"
+          name="height"
+          aria-label="Height in points"
+          min="0"
+          step="1"
+          [ngModel]="localField().locations.height"
+          (ngModelChange)="onLocationChange('height', $event)"
+        />
+      </nz-input-wrapper>
+    </div>
+  </div>
 
-    <nz-form-item>
-      <nz-form-label>Size</nz-form-label>
-      <nz-form-control>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
-          <nz-input-wrapper nzAddonBefore="W">
-            <input
-              nz-input
-              type="number"
-              name="width"
-              aria-label="Width in points"
-              min="0"
-              step="1"
-              style="width: 100%"
-              [ngModel]="localField().locations.width"
-              (ngModelChange)="onLocationChange('width', $event)"
-            />
-          </nz-input-wrapper>
+  <div class="ff-form__item">
+    <span class="ff-label" id="recipientLabel">Recipient</span>
+    <nz-select
+      name="recipient"
+      aria-labelledby="recipientLabel"
+      [ngModel]="localField().recipientIndex"
+      (ngModelChange)="onRecipientChange($event)"
+    >
+      <nz-option [nzValue]="1" nzLabel="Signer 1"></nz-option>
+    </nz-select>
+  </div>
 
-          <nz-input-wrapper nzAddonBefore="H">
-            <input
-              nz-input
-              type="number"
-              name="height"
-              aria-label="Height in points"
-              min="0"
-              step="1"
-              style="width: 100%"
-              [ngModel]="localField().locations.height"
-              (ngModelChange)="onLocationChange('height', $event)"
-            />
-          </nz-input-wrapper>
-        </div>
-      </nz-form-control>
-    </nz-form-item>
+  <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
+  <label nz-checkbox name="required" [ngModel]="localField().required" (ngModelChange)="onRequiredChange($event)"
+    >Required Field</label
+  >
 
-    <nz-form-item>
-      <nz-form-label>Recipient</nz-form-label>
-      <nz-form-control>
-        <nz-select
-          name="recipient"
-          style="width: 100%"
-          [ngModel]="localField().recipientIndex"
-          (ngModelChange)="onRecipientChange($event)"
-        >
-          <nz-option [nzValue]="1" nzLabel="Signer 1"></nz-option>
-        </nz-select>
-      </nz-form-control>
-    </nz-form-item>
+  <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
+  <label nz-checkbox name="readOnly" [ngModel]="!!localField().readOnly" (ngModelChange)="onReadOnlyChange($event)"
+    >Read Only</label
+  >
 
-    <nz-form-item>
-      <nz-form-control>
-        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-        <label nz-checkbox name="required" [ngModel]="localField().required" (ngModelChange)="onRequiredChange($event)"
-          >Required Field</label
-        >
-      </nz-form-control>
-    </nz-form-item>
-
-    <nz-form-item>
-      <nz-form-control>
-        <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-        <label
-          nz-checkbox
-          name="readOnly"
-          [ngModel]="!!localField().readOnly"
-          (ngModelChange)="onReadOnlyChange($event)"
-          >Read Only</label
-        >
-      </nz-form-control>
-    </nz-form-item>
-
-    <nz-form-item>
-      <nz-form-control>
-        <button nz-button nzType="primary" nzDanger nzBlock type="button" (click)="deleteClicked.emit()">
-          <i nz-icon nzType="delete"></i>
-          Delete Field
-        </button>
-      </nz-form-control>
-    </nz-form-item>
-  </form>
-</nz-card>
+  <button nz-button nzType="primary" nzDanger nzBlock type="button" (click)="deleteClicked.emit()">
+    <i nz-icon nzType="delete"></i>
+    Delete Field
+  </button>
+</form>

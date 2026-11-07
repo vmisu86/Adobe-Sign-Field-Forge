@@ -1,11 +1,8 @@
 import { ChangeDetectionStrategy, Component, effect, inject, untracked, viewChild } from '@angular/core';
 import { FormsModule, NgModel } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzLayoutModule } from 'ng-zorro-antd/layout';
 import { NzSelectModule } from 'ng-zorro-antd/select';
-import { NzSpaceModule } from 'ng-zorro-antd/space';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { AdobeDocumentType } from '../../models/field.model';
 import { EditorStateService } from '../../services/editor-state.service';
@@ -18,18 +15,8 @@ import { PdfDocumentService } from '../../services/pdf-document.service';
   selector: 'app-toolbar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FormsModule,
-    NzButtonModule,
-    NzIconModule,
-    NzDividerModule,
-    NzSelectModule,
-    NzSpaceModule,
-    NzToolTipModule,
-    NzLayoutModule,
-  ],
+  imports: [FormsModule, NzButtonModule, NzIconModule, NzSelectModule, NzToolTipModule],
   templateUrl: './toolbar.component.html',
-  styleUrls: ['./toolbar.component.less'],
 })
 export class ToolbarComponent {
   protected readonly state = inject(EditorStateService);

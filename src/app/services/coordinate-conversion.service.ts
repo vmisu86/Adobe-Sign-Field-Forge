@@ -51,6 +51,11 @@ export class CoordinateConversionService {
     return documentType === AdobeDocumentType.LIBRARY ? 1 : -1;
   }
 
+  /** Stored values keep two decimals (1/100 pt): drawing at 150% zoom would otherwise leave 15-digit numbers. */
+  roundPoints(value: number): number {
+    return Math.round(value * 100) / 100;
+  }
+
   snapToGrid(value: number, gridSize: number, snapEnabled: boolean): number {
     if (!snapEnabled) return value;
     return Math.round(value / gridSize) * gridSize;

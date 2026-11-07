@@ -1,10 +1,9 @@
-<div class="sidebar-content">
-  <div class="sidebar-header">
-    <h3>Field Types</h3>
+<aside class="ff-panel ff-panel--left" aria-label="Field types">
+  <div class="ff-panel__header">
+    <h2 class="ff-panel__title">Field Types</h2>
   </div>
 
-  <!-- Search Field Types -->
-  <div class="search-container">
+  <div class="ff-panel__tools">
     <nz-input-wrapper>
       <input
         type="text"
@@ -18,38 +17,27 @@
     </nz-input-wrapper>
   </div>
 
-  <!-- Field Type Cards -->
-  <div class="field-types-container">
+  <div class="ff-panel__body">
     @for (group of filteredFieldTypeGroups(); track group.label) {
-      <div class="field-type-group">
-        <div class="group-label">{{ group.label }}</div>
-        <div class="field-type-grid">
+      <section class="ff-section">
+        <h3 class="ff-section__label">{{ group.label }}</h3>
+        <div class="ff-stack">
           @for (preset of group.items; track fieldTypeService.keyOf(preset)) {
-            <nz-card
-              class="field-type-card"
-              [class.selected]="isSelected(preset)"
-              (click)="selectFieldType(preset)"
-              (keydown.enter)="selectFieldType(preset)"
-              (keydown.space)="selectFieldType(preset); $event.preventDefault()"
-              role="button"
-              tabindex="0"
+            <button
+              type="button"
+              class="ff-option ff-kind-{{ preset.kind }}"
+              [class.is-selected]="isSelected(preset)"
               [attr.aria-pressed]="isSelected(preset)"
-              [nzBodyStyle]="{ padding: '12px' }"
-              nzHoverable
+              (click)="selectFieldType(preset)"
             >
-              <div class="field-type-content">
-                <i nz-icon [nzType]="preset.icon" [style.color]="preset.color" [style.fontSize]="'24px'"></i>
-                <div class="field-type-info">
-                  <div class="field-type-label">{{ preset.label }}</div>
-                </div>
-              </div>
-            </nz-card>
+              <i class="ff-option__icon" nz-icon [nzType]="preset.icon"></i>
+              <span class="ff-option__label">{{ preset.label }}</span>
+            </button>
           }
         </div>
-      </div>
+      </section>
     }
-  </div>
 
-  <!-- Field List -->
-  <app-field-list></app-field-list>
-</div>
+    <app-field-list></app-field-list>
+  </div>
+</aside>

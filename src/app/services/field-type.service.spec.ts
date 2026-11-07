@@ -61,16 +61,16 @@ describe('FieldTypeService', () => {
     });
   });
 
-  it('looks up colour and icon from the matching preset and falls back otherwise', () => {
+  it('looks up kind and icon from the matching preset and falls back otherwise', () => {
     const signature = makeField({
       inputType: FormFieldInputType.SIGNATURE,
       contentType: FormFieldContentType.SIGNATURE,
     });
-    expect(service.getFieldColor(signature)).toBe('#52c41a');
+    expect(service.getFieldKind(signature)).toBe('signature');
     expect(service.getFieldIcon(signature)).toBe('edit');
 
     const unknown = makeField({ inputType: FormFieldInputType.IMAGE, contentType: FormFieldContentType.QR_CODE });
-    expect(service.getFieldColor(unknown)).toBe('#1890ff');
+    expect(service.getFieldKind(unknown)).toBe('text');
     expect(service.getFieldIcon(unknown)).toBe('question');
   });
 });

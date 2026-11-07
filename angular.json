@@ -34,7 +34,7 @@
                 "output": "assets/pdfjs/"
               }
             ],
-            "styles": ["./node_modules/ng-zorro-antd/ng-zorro-antd.min.css", "src/styles.less"],
+            "styles": ["src/styles.less"],
             "scripts": []
           },
           "configurations": {
@@ -93,7 +93,7 @@
                 "output": "assets/pdfjs/"
               }
             ],
-            "styles": ["./node_modules/ng-zorro-antd/ng-zorro-antd.min.css", "src/styles.less"],
+            "styles": ["src/styles.less"],
             "scripts": [],
             "karmaConfig": "karma.conf.js"
           }

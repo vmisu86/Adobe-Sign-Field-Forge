@@ -54,6 +54,17 @@ describe('FieldEditorService', () => {
       expect(fields.fields()[0].locations.top).toBe(100);
     });
 
+    it('keeps at most two decimals, so exports and the form show tidy numbers', () => {
+      editor.pointerDown({ x: 151, y: 151 });
+      editor.pointerUp({ x: 300, y: 224 }); // 149 x 73 px = 99.333... x 48.666... pt
+      const { left, top, width, height } = fields.fields()[0].locations;
+      for (const value of [left, top, width, height]) {
+        expect(Math.round(value * 100) / 100).toBe(value);
+      }
+      expect(width).toBe(99.33);
+      expect(height).toBe(48.67);
+    });
+
     it('draws upwards and leftwards from the start point too', () => {
       editor.pointerDown({ x: 300, y: 225 });
       editor.pointerUp({ x: 150, y: 150 });

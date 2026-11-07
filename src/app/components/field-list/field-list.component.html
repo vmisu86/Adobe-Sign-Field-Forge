@@ -1,30 +1,22 @@
 @if (fieldsOnCurrentPage().length > 0) {
-  <div class="fields-list-container">
-    <div class="group-label">Fields on Page {{ pdf.currentPage() }}</div>
-    <nz-list [nzDataSource]="fieldsOnCurrentPage()" nzSize="small">
+  <section class="ff-section">
+    <h3 class="ff-section__label">Fields on Page {{ pdf.currentPage() }}</h3>
+    <div class="ff-stack">
       @for (field of fieldsOnCurrentPage(); track field.id) {
-        <nz-list-item
-          [class.selected]="state.selectedFieldId() === field.id"
+        <button
+          type="button"
+          class="ff-option ff-option--compact ff-kind-{{ fieldTypeService.getFieldKind(field) }}"
+          [class.is-selected]="state.selectedFieldId() === field.id"
+          [attr.aria-pressed]="state.selectedFieldId() === field.id"
           (click)="editor.select(field.id)"
-          (keydown.enter)="editor.select(field.id)"
-          (keydown.space)="editor.select(field.id); $event.preventDefault()"
-          role="button"
-          tabindex="0"
-          style="cursor: pointer"
         >
-          <div class="field-list-item">
-            <i
-              nz-icon
-              [nzType]="fieldTypeService.getFieldIcon(field)"
-              [style.color]="fieldTypeService.getFieldColor(field)"
-            ></i>
-            <span class="field-name">{{ field.name }}</span>
-            @if (field.required) {
-              <nz-tag nzColor="error">Required</nz-tag>
-            }
-          </div>
-        </nz-list-item>
+          <i class="ff-option__icon" nz-icon [nzType]="fieldTypeService.getFieldIcon(field)"></i>
+          <span class="ff-option__label">{{ field.name }}</span>
+          @if (field.required) {
+            <span class="ff-chip ff-chip--danger">Required</span>
+          }
+        </button>
       }
-    </nz-list>
-  </div>
+    </div>
+  </section>
 }

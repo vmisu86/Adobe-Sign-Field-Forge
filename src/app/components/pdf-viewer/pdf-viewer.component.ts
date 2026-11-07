@@ -9,11 +9,8 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzLayoutModule } from 'ng-zorro-antd/layout';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { CanvasRendererService } from '../../services/canvas-renderer.service';
 import { CoordinateConversionService } from '../../services/coordinate-conversion.service';
@@ -36,18 +33,8 @@ import { ToolbarComponent } from '../toolbar/toolbar.component';
   selector: 'app-pdf-viewer',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    NzButtonModule,
-    NzIconModule,
-    NzLayoutModule,
-    NzAlertModule,
-    NzEmptyModule,
-    ToolbarComponent,
-    FieldTypeSidebarComponent,
-    FieldPropertiesSidebarComponent,
-  ],
+  imports: [NzButtonModule, NzIconModule, ToolbarComponent, FieldTypeSidebarComponent, FieldPropertiesSidebarComponent],
   templateUrl: './pdf-viewer.component.html',
-  styleUrls: ['./pdf-viewer.component.less'],
 })
 export class PdfViewerComponent {
   protected readonly state = inject(EditorStateService);
@@ -188,10 +175,14 @@ export class PdfViewerComponent {
         field,
         viewport,
         documentType,
-        this.fieldTypes.getFieldColor(field),
-        field.id === selectedId,
-        field.id === hoveredId,
-        this.fieldTypes.getRecipientLabel(field.recipientIndex),
+        this.fieldTypes.getFieldKind(field),
+        {
+          selected: field.id === selectedId,
+          hovered: field.id === hoveredId,
+          dimmed: selectedId !== null && field.id !== selectedId,
+        },
+        // Every field is the signer's today; naming it on each box is noise.
+        field.recipientIndex === 1 ? '' : this.fieldTypes.getRecipientLabel(field.recipientIndex),
       );
     }
 

@@ -280,6 +280,8 @@ export class FieldEditorService {
       top = this.coords.convertYCoordinate(Math.min(start.y, end.y), viewport, documentType);
     }
 
+    [left, top, width, height] = [left, top, width, height].map((value) => this.coords.roundPoints(value));
+
     const contentType = type.contentType ?? FormFieldContentType.DATA;
     const field: Field = {
       id: createFieldId(),

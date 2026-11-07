@@ -214,10 +214,11 @@ npm run format       # Prettier (npm run format:check to only check)
 npm test             # Karma + Jasmine in Chrome, watching
 npm run test:ci      # the same, headless and once
 npm run build        # production build
-npm run check        # lint + format check + tests + build, what CI runs
+npm run check:tokens # fail on literal colours outside the design tokens
+npm run check        # token check + lint + format check + tests + build, what CI runs
 ```
 
-`AGENTS.md` describes the architecture and conventions in more detail (it is also what AI coding assistants read).
+`AGENTS.md` describes the architecture and conventions in more detail (it is also what AI coding assistants read). `DESIGN.md` documents the design system: the colour, type and spacing tokens in `src/styles/` and the `ff-*` component classes.
 
 ## Contributing
 

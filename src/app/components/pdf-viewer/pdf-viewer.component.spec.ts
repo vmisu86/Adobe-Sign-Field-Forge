@@ -45,11 +45,12 @@ describe('PdfViewerComponent', () => {
 
   it('shows which field type is selected and lets the banner be closed', () => {
     const host = fixture.nativeElement as HTMLElement;
-    expect(host.textContent).toContain('Selected: Text Field');
+    expect(host.querySelector('.ff-banner')?.textContent).toContain('Text Field');
 
-    state.selectedTypeKey.set('');
+    host.querySelector<HTMLButtonElement>('.ff-banner button')!.click();
     fixture.detectChanges();
-    expect(host.textContent).not.toContain('Selected:');
+    expect(state.selectedTypeKey()).toBe('');
+    expect(host.querySelector('.ff-banner')).toBeNull();
   });
 
   describe('keyboard', () => {

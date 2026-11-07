@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import {
   Field,
+  FieldKind,
   FieldTypeCombination,
   FieldTypeGroup,
   fieldTypeKey,
@@ -30,7 +31,7 @@ export class FieldTypeService {
       inputType: FormFieldInputType.TEXT_FIELD,
       contentType: FormFieldContentType.DATA,
       icon: 'font-size',
-      color: '#1890ff',
+      kind: 'text',
       validation: '',
       validationData: '',
     },
@@ -39,7 +40,7 @@ export class FieldTypeService {
       inputType: FormFieldInputType.MULTILINE,
       contentType: FormFieldContentType.DATA,
       icon: 'file-text',
-      color: '#1890ff',
+      kind: 'text',
       validation: '',
       validationData: '',
     },
@@ -48,7 +49,7 @@ export class FieldTypeService {
       inputType: FormFieldInputType.TEXT_FIELD,
       contentType: FormFieldContentType.SIGNER_NAME,
       icon: 'user',
-      color: '#13c2c2',
+      kind: 'text',
       validation: '',
       validationData: '',
     },
@@ -57,7 +58,7 @@ export class FieldTypeService {
       inputType: FormFieldInputType.TEXT_FIELD,
       contentType: FormFieldContentType.SIGNER_EMAIL,
       icon: 'mail',
-      color: '#13c2c2',
+      kind: 'text',
       validation: '',
       validationData: '',
     },
@@ -67,7 +68,7 @@ export class FieldTypeService {
       inputType: FormFieldInputType.SIGNATURE,
       contentType: FormFieldContentType.SIGNATURE,
       icon: 'edit',
-      color: '#52c41a',
+      kind: 'signature',
       validation: '',
       validationData: '',
     },
@@ -76,7 +77,7 @@ export class FieldTypeService {
       inputType: FormFieldInputType.SIGNATURE,
       contentType: FormFieldContentType.SIGNER_INITIALS,
       icon: 'highlight',
-      color: '#52c41a',
+      kind: 'signature',
       validation: '',
       validationData: '',
     },
@@ -86,7 +87,7 @@ export class FieldTypeService {
       inputType: FormFieldInputType.DATE,
       contentType: FormFieldContentType.DATA,
       icon: 'calendar',
-      color: '#fa8c16',
+      kind: 'date',
       validation: 'DATE',
       validationData: '',
     },
@@ -95,7 +96,7 @@ export class FieldTypeService {
       inputType: FormFieldInputType.DATE,
       contentType: FormFieldContentType.DATA,
       icon: 'calendar',
-      color: '#fa8c16',
+      kind: 'date',
       validation: 'DATE_CUSTOM',
       validationData: 'yyyy-MM-dd',
     },
@@ -104,7 +105,7 @@ export class FieldTypeService {
       inputType: FormFieldInputType.DATE,
       contentType: FormFieldContentType.SIGNATURE_DATE,
       icon: 'calendar',
-      color: '#fa8c16',
+      kind: 'date',
       validation: '',
       validationData: '',
       readOnly: true,
@@ -115,7 +116,7 @@ export class FieldTypeService {
       inputType: FormFieldInputType.CHECKBOX,
       contentType: FormFieldContentType.DATA,
       icon: 'check-square',
-      color: '#722ed1',
+      kind: 'choice',
       validation: '',
       validationData: '',
     },
@@ -124,7 +125,7 @@ export class FieldTypeService {
       inputType: FormFieldInputType.RADIO,
       contentType: FormFieldContentType.DATA,
       icon: 'check-circle',
-      color: '#722ed1',
+      kind: 'choice',
       validation: '',
       validationData: '',
     },
@@ -188,11 +189,11 @@ export class FieldTypeService {
     return this.fieldTypeCombinations.find((ft) => fieldTypeKey(ft) === key);
   }
 
-  getFieldColor(field: Field): string {
+  getFieldKind(field: Field): FieldKind {
     const combination = this.fieldTypeCombinations.find(
       (ft) => ft.inputType === field.inputType && ft.contentType === field.contentType,
     );
-    return combination?.color || '#1890ff';
+    return combination?.kind ?? 'text';
   }
 
   getFieldIcon(field: Field): string {

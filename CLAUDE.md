@@ -3,7 +3,8 @@
 ## For Claude Code
 
 - Personal, public, open-source demo project. Keep employer names, internal URLs, customer documents and real signer data out of the repo.
-- After a change run `npm run check` (lint, format, tests, build). The tests are green today, so a red one is yours.
+- Read `DESIGN.md` before any UI change, and build from its `ff-*` classes and tokens. A literal colour fails `npm run check:tokens`.
+- After a change run `npm run check` (token check, lint, format, tests, build). The tests are green today, so a red one is yours.
 - For anything touching drawing, coordinates, import/export or dialogs, also run the app (`npm start`, or the `fieldforge` entry in
   `.claude/launch.json`) and exercise it in the browser with a real PDF. Keep the preview pane visible: a hidden pane pauses
   `requestAnimationFrame`, which stalls PDF.js (see AGENTS.md Gotchas).

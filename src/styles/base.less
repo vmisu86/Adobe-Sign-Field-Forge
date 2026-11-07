@@ -1,0 +1,44 @@
+// Page-level defaults.
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--ff-font-sans);
+  font-size: var(--ff-text-md);
+  line-height: var(--ff-line-height);
+  color: var(--ff-text);
+  background: var(--ff-bg-app);
+  -webkit-font-smoothing: antialiased;
+}
+
+// Components own their layout through ff- classes, so their host elements stay out of the way.
+app-toolbar,
+app-field-type-sidebar,
+app-field-properties-sidebar {
+  display: contents;
+}
+
+app-field-list,
+app-field-property-form {
+  display: block;
+}
+
+// Keyboard focus is always visible. Components with their own ring (ff-option, ff-icon-button) override it.
+:focus-visible {
+  outline: 2px solid var(--ff-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

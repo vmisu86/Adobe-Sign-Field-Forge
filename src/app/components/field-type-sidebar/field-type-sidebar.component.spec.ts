@@ -9,7 +9,10 @@ describe('FieldTypeSidebarComponent', () => {
   let fixture: ComponentFixture<FieldTypeSidebarComponent>;
   let host: HTMLElement;
 
-  const labels = () => Array.from(host.querySelectorAll('.field-type-label')).map((el) => el.textContent?.trim());
+  const labels = () =>
+    Array.from(
+      host.querySelectorAll('.ff-panel__body > .ff-section .ff-option:not(.ff-option--compact) .ff-option__label'),
+    ).map((el) => el.textContent?.trim());
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -25,7 +28,7 @@ describe('FieldTypeSidebarComponent', () => {
     expect(labels()).toContain('Text Field');
     expect(labels()).toContain('Signature');
     expect(labels()).toContain('Radio Button');
-    expect(Array.from(host.querySelectorAll('.group-label')).map((el) => el.textContent?.trim())).toContain(
+    expect(Array.from(host.querySelectorAll('.ff-section__label')).map((el) => el.textContent?.trim())).toContain(
       'Signature Fields',
     );
   });
@@ -44,7 +47,7 @@ describe('FieldTypeSidebarComponent', () => {
 
   it('selects a preset when its card is clicked and marks it', () => {
     const state = TestBed.inject(EditorStateService);
-    const card = Array.from(host.querySelectorAll<HTMLElement>('.field-type-card')).find((el) =>
+    const card = Array.from(host.querySelectorAll<HTMLElement>('button.ff-option')).find((el) =>
       el.textContent?.includes('Checkbox'),
     )!;
 
@@ -52,7 +55,7 @@ describe('FieldTypeSidebarComponent', () => {
     fixture.detectChanges();
 
     expect(state.selectedType()?.label).toBe('Checkbox');
-    expect(card.classList).toContain('selected');
+    expect(card.classList).toContain('is-selected');
     expect(card.getAttribute('aria-pressed')).toBe('true');
   });
 
@@ -66,10 +69,12 @@ describe('FieldTypeSidebarComponent', () => {
     );
     fixture.detectChanges();
 
-    const names = Array.from(host.querySelectorAll('.field-name')).map((el) => el.textContent?.trim());
+    const names = Array.from(host.querySelectorAll('.ff-option--compact .ff-option__label')).map((el) =>
+      el.textContent?.trim(),
+    );
     expect(names).toEqual(['first']);
 
-    host.querySelector<HTMLElement>('nz-list-item')!.click();
+    host.querySelector<HTMLElement>('.ff-option--compact')!.click();
     expect(state.selectedFieldId()).toBe('a');
   });
 });

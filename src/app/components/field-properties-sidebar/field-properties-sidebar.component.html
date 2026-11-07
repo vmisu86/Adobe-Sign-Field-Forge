@@ -3,23 +3,20 @@
     <h3>Properties</h3>
   </div>
 
-  <!-- Selected Field Properties -->
-  @if(selectedField){
-  <div class="properties-panel">
-    <app-field-property-form
-      [field]="selectedField"
-      (fieldUpdated)="onFieldUpdated($event)"
-      (deleteClicked)="onFieldDeleted()">
-    </app-field-property-form>
-  </div>
+  @if (state.selectedField(); as field) {
+    <!-- Selected Field Properties -->
+    <div class="properties-panel">
+      <app-field-property-form
+        [field]="field"
+        (fieldUpdated)="editor.updateSelected($event)"
+        (deleteClicked)="editor.deleteSelected()"
+      >
+      </app-field-property-form>
+    </div>
+  } @else {
+    <!-- No Selection State -->
+    <div class="no-selection">
+      <nz-empty nzNotFoundContent="No field selected" [nzNotFoundImage]="'simple'"></nz-empty>
+    </div>
   }
-
-  <!-- No Selection State -->
-  <div *ngIf="!selectedField" class="no-selection">
-    <nz-empty nzNotFoundContent="No field selected" [nzNotFoundImage]="'simple'">
-      <ng-template #desc>
-        <p>Select a field to view and edit its properties</p>
-      </ng-template>
-    </nz-empty>
-  </div>
 </div>

@@ -1,0 +1,10 @@
+/dist
+/.angular
+/coverage
+/node_modules
+/.vs
+/.vscode
+package-lock.json
+src/assets
+public
+*.md

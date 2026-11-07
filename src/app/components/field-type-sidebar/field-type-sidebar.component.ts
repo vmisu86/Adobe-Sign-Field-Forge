@@ -1,74 +1,46 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { NzLayoutModule } from 'ng-zorro-antd/layout';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzCardModule } from 'ng-zorro-antd/card';
-import { Field, FieldTypeCombination } from '../../models/field.model';
-import { FieldListComponent } from '../field-list/field-list.component';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzLayoutModule } from 'ng-zorro-antd/layout';
+import { FieldTypeCombination } from '../../models/field.model';
+import { EditorStateService } from '../../services/editor-state.service';
 import { FieldTypeService } from '../../services/field-type.service';
-
-interface FieldTypeGroup {
-  label: string;
-  items: FieldTypeCombination[];
-}
+import { FieldListComponent } from '../field-list/field-list.component';
 
 @Component({
   selector: 'app-field-type-sidebar',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    NzLayoutModule,
-    NzInputModule,
-    NzIconModule,
-    NzCardModule,
-    FieldListComponent
-  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule, NzLayoutModule, NzInputModule, NzIconModule, NzCardModule, FieldListComponent],
   templateUrl: './field-type-sidebar.component.html',
-  styleUrls: ['./field-type-sidebar.component.less']
+  styleUrls: ['./field-type-sidebar.component.less'],
 })
 export class FieldTypeSidebarComponent {
-  @Input() fieldTypeGroups: FieldTypeGroup[] = [];
-  @Input() selectedFieldType: string | null = null;
-  @Input() fields: Field[] = [];
-  @Input() currentPage = 1;
-  @Input() selectedFieldId: string | null = null;
+  protected readonly fieldTypeService = inject(FieldTypeService);
+  protected readonly state = inject(EditorStateService);
 
-  @Output() fieldTypeSelected = new EventEmitter<FieldTypeCombination>();
-  @Output() fieldSelected = new EventEmitter<Field>();
+  protected readonly searchFieldType = signal('');
 
-  searchFieldType = '';
+  protected readonly filteredFieldTypeGroups = computed(() => {
+    const groups = this.fieldTypeService.getFieldTypeGroups();
+    const search = this.searchFieldType().trim().toLowerCase();
+    if (!search) return groups;
 
-  constructor(public fieldTypeService: FieldTypeService) {}
-
-  get filteredFieldTypeGroups(): FieldTypeGroup[] {
-    if (!this.searchFieldType) {
-      return this.fieldTypeGroups;
-    }
-
-    const searchLower = this.searchFieldType.toLowerCase();
-    return this.fieldTypeGroups
-      .map(group => ({
+    return groups
+      .map((group) => ({
         ...group,
-        items: group.items.filter(item =>
-          item.label.toLowerCase().includes(searchLower)
-        )
+        items: group.items.filter((item) => item.label.toLowerCase().includes(search)),
       }))
-      .filter(group => group.items.length > 0);
+      .filter((group) => group.items.length > 0);
+  });
+
+  protected selectFieldType(preset: FieldTypeCombination): void {
+    this.state.selectedTypeKey.set(this.fieldTypeService.keyOf(preset));
   }
 
-  onFieldTypeClick(fieldType: FieldTypeCombination): void {
-    this.fieldTypeSelected.emit(fieldType);
-  }
-
-  onFieldClick(field: Field): void {
-    this.fieldSelected.emit(field);
-  }
-
-  isFieldTypeSelected(field: FieldTypeCombination): boolean {
-    const key = `${field.label}_${field.inputType}_${field.contentType}`.toLowerCase();
-    return this.selectedFieldType === key;
+  protected isSelected(preset: FieldTypeCombination): boolean {
+    return this.state.selectedTypeKey() === this.fieldTypeService.keyOf(preset);
   }
 }

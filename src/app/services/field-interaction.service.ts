@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { AdobeDocumentType, Field } from '../models/field.model';
+import { ViewportGeometry } from '../models/pdf.types';
 import { CoordinateConversionService } from './coordinate-conversion.service';
 
 export interface InteractionState {
@@ -12,7 +13,7 @@ export interface InteractionState {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class FieldInteractionService {
   private state: InteractionState = {
@@ -21,10 +22,10 @@ export class FieldInteractionService {
     dragStartPos: null,
     dragFieldStartPos: null,
     resizeHandle: null,
-    resizeStartBounds: null
+    resizeStartBounds: null,
   };
 
-  constructor(private coordService: CoordinateConversionService) {}
+  private readonly coordService = inject(CoordinateConversionService);
 
   getState(): InteractionState {
     return { ...this.state };
@@ -35,16 +36,11 @@ export class FieldInteractionService {
     this.state.dragStartPos = { x, y };
     this.state.dragFieldStartPos = {
       left: field.locations.left,
-      top: field.locations.top
+      top: field.locations.top,
     };
   }
 
-  startResize(
-    field: Field,
-    handle: string,
-    x: number,
-    y: number
-  ): void {
+  startResize(field: Field, handle: string, x: number, y: number): void {
     this.state.isResizing = true;
     this.state.resizeHandle = handle;
     this.state.dragStartPos = { x, y };
@@ -52,30 +48,24 @@ export class FieldInteractionService {
       left: field.locations.left,
       top: field.locations.top,
       width: field.locations.width,
-      height: field.locations.height
+      height: field.locations.height,
     };
   }
 
   calculateDragPosition(
     currentX: number,
     currentY: number,
-    viewport: any,
+    viewport: ViewportGeometry,
     documentType: AdobeDocumentType,
     snapToGrid: boolean,
-    gridSize: number
+    gridSize: number,
   ): { left: number; top: number } | null {
     if (!this.state.isDragging || !this.state.dragStartPos || !this.state.dragFieldStartPos) {
       return null;
     }
 
-    const deltaX = this.coordService.pixelsToPoints(
-      currentX - this.state.dragStartPos.x,
-      viewport.scale
-    );
-    const deltaY = this.coordService.pixelsToPoints(
-      currentY - this.state.dragStartPos.y,
-      viewport.scale
-    );
+    const deltaX = this.coordService.pixelsToPoints(currentX - this.state.dragStartPos.x, viewport.scale);
+    const deltaY = this.coordService.pixelsToPoints(currentY - this.state.dragStartPos.y, viewport.scale);
 
     const yMultiplier = this.coordService.getYMultiplier(documentType);
 
@@ -91,24 +81,23 @@ export class FieldInteractionService {
   calculateResizeBounds(
     currentX: number,
     currentY: number,
-    viewport: any,
+    viewport: ViewportGeometry,
     documentType: AdobeDocumentType,
     snapToGrid: boolean,
     gridSize: number,
-    minSize: number = 20
+    minSize = 20,
   ): { left: number; top: number; width: number; height: number } | null {
-    if (!this.state.isResizing || !this.state.dragStartPos || !this.state.resizeStartBounds || !this.state.resizeHandle) {
+    if (
+      !this.state.isResizing ||
+      !this.state.dragStartPos ||
+      !this.state.resizeStartBounds ||
+      !this.state.resizeHandle
+    ) {
       return null;
     }
 
-    const deltaX = this.coordService.pixelsToPoints(
-      currentX - this.state.dragStartPos.x,
-      viewport.scale
-    );
-    const deltaY = this.coordService.pixelsToPoints(
-      currentY - this.state.dragStartPos.y,
-      viewport.scale
-    );
+    const deltaX = this.coordService.pixelsToPoints(currentX - this.state.dragStartPos.x, viewport.scale);
+    const deltaY = this.coordService.pixelsToPoints(currentY - this.state.dragStartPos.y, viewport.scale);
 
     let { left, top, width, height } = this.state.resizeStartBounds;
     const yMultiplier = this.coordService.getYMultiplier(documentType);
@@ -201,8 +190,8 @@ export class FieldInteractionService {
     x: number,
     y: number,
     field: Field,
-    viewport: any,
-    documentType: AdobeDocumentType
+    viewport: ViewportGeometry,
+    documentType: AdobeDocumentType,
   ): string | null {
     if (!field) return null;
 
@@ -226,10 +215,8 @@ export class FieldInteractionService {
     ];
 
     for (const handle of handles) {
-      const distance = Math.sqrt(
-        Math.pow(x - handle.x, 2) + Math.pow(y - handle.y, 2)
-      );
-      if (distance <= (handleSize / 2 + hitMargin)) {
+      const distance = Math.sqrt(Math.pow(x - handle.x, 2) + Math.pow(y - handle.y, 2));
+      if (distance <= handleSize / 2 + hitMargin) {
         return handle.name;
       }
     }
@@ -242,8 +229,8 @@ export class FieldInteractionService {
     y: number,
     selectedField: Field | null,
     hoveredField: Field | null,
-    viewport: any,
-    documentType: AdobeDocumentType
+    viewport: ViewportGeometry,
+    documentType: AdobeDocumentType,
   ): string {
     if (!selectedField) {
       return hoveredField ? 'pointer' : 'default';
@@ -251,11 +238,15 @@ export class FieldInteractionService {
 
     const handle = this.getResizeHandleAtPoint(x, y, selectedField, viewport, documentType);
     if (handle) {
-      const cursorMap: { [key: string]: string } = {
-        'tl': 'nwse-resize', 'br': 'nwse-resize',
-        'tr': 'nesw-resize', 'bl': 'nesw-resize',
-        't': 'ns-resize', 'b': 'ns-resize',
-        'l': 'ew-resize', 'r': 'ew-resize'
+      const cursorMap: Record<string, string> = {
+        tl: 'nwse-resize',
+        br: 'nwse-resize',
+        tr: 'nesw-resize',
+        bl: 'nesw-resize',
+        t: 'ns-resize',
+        b: 'ns-resize',
+        l: 'ew-resize',
+        r: 'ew-resize',
       };
       return cursorMap[handle] || 'default';
     }

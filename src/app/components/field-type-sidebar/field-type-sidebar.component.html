@@ -6,35 +6,50 @@
   <!-- Search Field Types -->
   <div class="search-container">
     <nz-input-wrapper>
-      <input type="text" nz-input placeholder="Search field types..." [(ngModel)]="searchFieldType">
+      <input
+        type="text"
+        nz-input
+        placeholder="Search field types..."
+        aria-label="Search field types"
+        [ngModel]="searchFieldType()"
+        (ngModelChange)="searchFieldType.set($event)"
+      />
       <i nz-icon nzType="search" nz-input-prefix></i>
     </nz-input-wrapper>
   </div>
 
   <!-- Field Type Cards -->
   <div class="field-types-container">
-    <div *ngFor="let group of filteredFieldTypeGroups" class="field-type-group">
-      <div class="group-label">{{ group.label }}</div>
-      <div class="field-type-grid">
-        <nz-card *ngFor="let field of group.items" class="field-type-card"
-          [class.selected]="isFieldTypeSelected(field)"
-          (click)="onFieldTypeClick(field)" [nzBodyStyle]="{'padding': '12px'}" nzHoverable>
-          <div class="field-type-content">
-            <i nz-icon [nzType]="field.icon" [style.color]="field.color" [style.fontSize]="'24px'"></i>
-            <div class="field-type-info">
-              <div class="field-type-label">{{ field.label }}</div>
-            </div>
-          </div>
-        </nz-card>
+    @for (group of filteredFieldTypeGroups(); track group.label) {
+      <div class="field-type-group">
+        <div class="group-label">{{ group.label }}</div>
+        <div class="field-type-grid">
+          @for (preset of group.items; track fieldTypeService.keyOf(preset)) {
+            <nz-card
+              class="field-type-card"
+              [class.selected]="isSelected(preset)"
+              (click)="selectFieldType(preset)"
+              (keydown.enter)="selectFieldType(preset)"
+              (keydown.space)="selectFieldType(preset); $event.preventDefault()"
+              role="button"
+              tabindex="0"
+              [attr.aria-pressed]="isSelected(preset)"
+              [nzBodyStyle]="{ padding: '12px' }"
+              nzHoverable
+            >
+              <div class="field-type-content">
+                <i nz-icon [nzType]="preset.icon" [style.color]="preset.color" [style.fontSize]="'24px'"></i>
+                <div class="field-type-info">
+                  <div class="field-type-label">{{ preset.label }}</div>
+                </div>
+              </div>
+            </nz-card>
+          }
+        </div>
       </div>
-    </div>
+    }
   </div>
 
   <!-- Field List -->
-  <app-field-list
-    [fields]="fields"
-    [selectedFieldId]="selectedFieldId"
-    [currentPage]="currentPage"
-    (fieldSelected)="onFieldClick($event)">
-  </app-field-list>
+  <app-field-list></app-field-list>
 </div>

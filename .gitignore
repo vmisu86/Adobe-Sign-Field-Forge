@@ -57,3 +57,6 @@ testem.log
 .DS_Store
 Thumbs.db
 /PROJECT_ANALYSIS.md
+
+# Claude Code local-only permissions
+.claude/settings.local.json

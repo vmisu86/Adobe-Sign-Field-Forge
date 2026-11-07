@@ -33,7 +33,7 @@ While Adobe Sign provides its own interface for adding form fields to documents,
 
 - 💾 **Import/Export** field configurations as JSON
 - 📊 **JSON viewer** with copy-to-clipboard functionality
-- 🔄 **Adobe Sign API-compatible** export format
+- 🔄 **Adobe Sign API-compatible** export (the "Adobe JSON" button writes a `formFields` array)
 - 💼 **Configuration persistence** for workflow automation
 
 #### Enterprise Features
@@ -71,8 +71,8 @@ No mode switching, no complex interactions - just natural, intuitive field creat
 - **Angular 20**: Modern component-based architecture
 - **PDF.js 5.3.31**: Client-side PDF rendering
 - **Ant Design (ng-zorro) v20**: Professional UI component library
-- **TypeScript 5.7**: Type-safe development with strict mode
-- **RxJS**: Reactive state management
+- **TypeScript 5.8**: Type-safe development with strict mode
+- **Angular signals**: State lives in signals; components are `OnPush`
 - **Enterprise Architecture**: Service-based separation of concerns
 
 ## Architecture Highlights
@@ -80,18 +80,22 @@ No mode switching, no complex interactions - just natural, intuitive field creat
 ### Service Layer
 
 - **CoordinateConversionService**: Handles PDF coordinate transformations
-- **FieldInteractionService**: Manages drag, resize, and selection logic
-- **CanvasRendererService**: Optimized canvas drawing operations
+- **FieldInteractionService**: Drag and resize maths and the resize handles
+- **FieldEditorService**: What a mouse press, move or release means (select, move, resize, draw), plus undo, delete and the document-type change
+- **CanvasRendererService**: Canvas drawing operations
 - **FieldTypeService**: Centralized field type definitions and metadata
 - **HistoryService**: Undo/redo functionality with command pattern
-- **PdfFieldService**: Core field management and state
+- **PdfFieldService**: The list of fields (every change is undoable)
+- **PdfDocumentService**: Loads the PDF and renders one page at a time
+- **EditorStateService**: Grid, snap, selection, sidebars and the other UI state
+- **FileActionsService**: Open a PDF, import / export JSON, the JSON dialog
 
 ### Component Structure
 
 - **Standalone components**: Modern Angular architecture
 - **Clean separation**: UI, business logic, and services
 - **Type safety**: Comprehensive interfaces and models
-- **Reactive patterns**: Observable-based state management
+- **Reactive patterns**: Signal-based state management
 
 ## Getting Started
 
@@ -143,14 +147,17 @@ ng serve
 
 ### Import/Export
 
-- **Export**: Click "Export" to download your field configuration as JSON
-- **Import**: Click "Import" to load a previously saved configuration
+- **Export**: Click "Export" to download your field configuration (FieldForge's own format: the fields, the coordinate system and the page count) as JSON
+- **Adobe JSON**: Click "Adobe JSON" to download just the `formFields` array, in the shape Adobe Sign takes (no UI ids, `locations` as an array)
+- **Import**: Click "Import" to load either file. A field with several `locations` becomes one field per location, and anything unusable is skipped with a note saying why. Import is a single undo step
 - **View JSON**: Click "View JSON" to see and copy the raw configuration
 
 ### Keyboard Shortcuts
 
 - `Ctrl+Z`: Undo
-- `Ctrl+Shift+Z`: Redo
+- `Ctrl+Shift+Z` or `Ctrl+Y`: Redo
+- `Delete` / `Backspace`: Delete the selected field (not while typing in a form field)
+- `Esc`: Cancel a drag or resize, otherwise deselect
 
 ## Configuration
 
@@ -158,10 +165,12 @@ ng serve
 
 FieldForge supports both Adobe Sign coordinate systems:
 
-- **TRANSIENT**: Top-left origin (default)
-- **LIBRARY**: Bottom-left origin
+- **TRANSIENT** (default): origin at the **bottom**-left of the page. A field's `top` is the distance from the bottom of the page to the field's top edge.
+- **LIBRARY**: origin at the **top**-left of the page. A field's `top` is the distance from the top of the page to the field's top edge.
 
-Switch between modes using the "Coordinate System" dropdown in the header.
+All values are PDF points (1/72 inch); `left`, `width` and `height` are the same in both systems.
+
+Switch between modes using the "Coordinate System" dropdown in the header. Switching rewrites every field's `top` so it stays where it is on the page (the undo history is cleared, because older steps hold values in the other system), and the exported values change. The PDF must be open for this, because the page heights are needed.
 
 ### Field Types
 
@@ -177,22 +186,38 @@ Supported field types include:
 
 ## Integration with Adobe Sign
 
-The exported JSON format is directly compatible with Adobe Sign's `formFields` API parameter. Use the exported configuration when creating transient documents or library templates:
+The file written by **Adobe JSON** is an array in the shape of Adobe Sign's `formFields` API parameter. Use it when creating transient documents or library templates, with the coordinate system that matches the kind of document you are sending:
 
 ```javascript
 const response = await adobeSignApi.createTransientDocument({
   fileInfo: {
     /* your file */
   },
-  formFields: exportedFieldConfig.fields,
+  formFields: adobeFormFields, // the contents of adobe-sign-formfields-*.json
 });
 ```
+
+The plain **Export** file is FieldForge's own format, for saving and reloading your work; it carries UI ids and is not meant to be sent to the API.
 
 ## Browser Support
 
 - Chrome/Edge (latest)
 - Firefox (latest)
 - Safari (latest)
+
+## Development
+
+```bash
+npm start            # dev server on http://localhost:4200/
+npm run lint         # ESLint (angular-eslint)
+npm run format       # Prettier (npm run format:check to only check)
+npm test             # Karma + Jasmine in Chrome, watching
+npm run test:ci      # the same, headless and once
+npm run build        # production build
+npm run check        # lint + format check + tests + build, what CI runs
+```
+
+`AGENTS.md` describes the architecture and conventions in more detail (it is also what AI coding assistants read).
 
 ## Contributing
 

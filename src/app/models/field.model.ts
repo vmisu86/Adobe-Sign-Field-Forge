@@ -7,12 +7,12 @@ export enum FormFieldInputType {
   SIGNATURE = 'SIGNATURE',
   DATE = 'DATE',
   HYPERLINK = 'HYPERLINK',
-  IMAGE = 'IMAGE'
+  IMAGE = 'IMAGE',
 }
 
 export enum AdobeDocumentType {
-  LIBRARY='LIBRARY',
-  TRANSIENT='TRANSIENT'
+  LIBRARY = 'LIBRARY',
+  TRANSIENT = 'TRANSIENT',
 }
 
 export enum FormFieldContentType {
@@ -26,7 +26,7 @@ export enum FormFieldContentType {
   SIGNER_COMPANY = 'SIGNER_COMPANY',
   IMAGE = 'IMAGE',
   QR_CODE = 'QR_CODE',
-  HYPERLINK = 'HYPERLINK'
+  HYPERLINK = 'HYPERLINK',
 }
 
 export interface FormFieldLocation {
@@ -45,27 +45,22 @@ export interface Field {
   required: boolean;
   locations: FormFieldLocation;
   recipientIndex: number; // 1 = SIGNER, 2 = APPROVER
-  validation: string,
-  validationData: string,
-  readOnly?:boolean,
+  validation: string;
+  validationData: string;
+  readOnly?: boolean;
 }
 
 // Backend ViewModel format
 export interface IFormFieldGeneratorViewModel {
   name: string;
   inputType: FormFieldInputType;
-  contentType?:FormFieldContentType;
+  contentType?: FormFieldContentType;
   required: boolean;
-  validation: string,
-  validationData: string,
-  readOnly?:boolean,
-  locations: [{
-    pageNumber: number;
-    left: number;
-    top: number;
-    width: number;
-    height: number;
-  }];
+  validation: string;
+  validationData: string;
+  readOnly?: boolean;
+  recipientIndex: number;
+  locations: FormFieldLocation[];
 }
 
 // Field type combinations for dropdown
@@ -75,7 +70,25 @@ export interface FieldTypeCombination {
   contentType?: FormFieldContentType;
   icon: string;
   color: string;
-  validation: string,
-  validationData: string,
-  readOnly?:boolean,
+  validation: string;
+  validationData: string;
+  readOnly?: boolean;
+}
+
+export interface FieldTypeGroup {
+  label: string;
+  items: FieldTypeCombination[];
+}
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+/**
+ * Lookup key of a field type preset. The label is part of it because several presets share
+ * the same input and content type (the two date presets).
+ */
+export function fieldTypeKey(preset: Pick<FieldTypeCombination, 'label' | 'inputType' | 'contentType'>): string {
+  return `${preset.label}_${preset.inputType}_${preset.contentType}`.toLowerCase();
 }

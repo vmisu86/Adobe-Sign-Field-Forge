@@ -1,12 +1,13 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { AdobeDocumentType, Field } from '../models/field.model';
+import { ViewportGeometry } from '../models/pdf.types';
 import { CoordinateConversionService } from './coordinate-conversion.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CanvasRendererService {
-  constructor(private coordService: CoordinateConversionService) {}
+  private readonly coordService = inject(CoordinateConversionService);
 
   /**
    * Clear the entire canvas
@@ -20,11 +21,7 @@ export class CanvasRendererService {
   /**
    * Draw grid overlay on canvas
    */
-  drawGrid(
-    ctx: CanvasRenderingContext2D,
-    viewport: any,
-    documentType: AdobeDocumentType
-  ): void {
+  drawGrid(ctx: CanvasRenderingContext2D, viewport: ViewportGeometry, documentType: AdobeDocumentType): void {
     ctx.save();
     ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = 0.5;
@@ -52,9 +49,8 @@ export class CanvasRendererService {
       ctx.lineTo(viewport.width, pixelY);
       ctx.stroke();
 
-      const displayY = documentType === AdobeDocumentType.LIBRARY
-        ? Math.round(pointY)
-        : Math.round(pageHeightInPoints - pointY);
+      const displayY =
+        documentType === AdobeDocumentType.LIBRARY ? Math.round(pointY) : Math.round(pageHeightInPoints - pointY);
 
       ctx.fillText(displayY.toString(), 2, pixelY - 2);
     }
@@ -65,7 +61,7 @@ export class CanvasRendererService {
     ctx.fillText(
       `Page: ${pageWidthInPoints.toFixed(0)} × ${pageHeightInPoints.toFixed(0)} points`,
       10,
-      viewport.height - 10
+      viewport.height - 10,
     );
 
     ctx.restore();
@@ -74,13 +70,7 @@ export class CanvasRendererService {
   /**
    * Draw selection handles around a field
    */
-  drawSelectionHandles(
-    ctx: CanvasRenderingContext2D,
-    left: number,
-    top: number,
-    width: number,
-    height: number
-  ): void {
+  drawSelectionHandles(ctx: CanvasRenderingContext2D, left: number, top: number, width: number, height: number): void {
     const handleSize = 8;
     const handles = [
       { x: left, y: top },
@@ -97,7 +87,7 @@ export class CanvasRendererService {
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 2;
 
-    handles.forEach(handle => {
+    handles.forEach((handle) => {
       ctx.fillRect(handle.x - handleSize / 2, handle.y - handleSize / 2, handleSize, handleSize);
       ctx.strokeRect(handle.x - handleSize / 2, handle.y - handleSize / 2, handleSize, handleSize);
     });
@@ -109,12 +99,12 @@ export class CanvasRendererService {
   drawField(
     ctx: CanvasRenderingContext2D,
     field: Field,
-    viewport: any,
+    viewport: ViewportGeometry,
     documentType: AdobeDocumentType,
     color: string,
     isSelected: boolean,
     isHovered: boolean,
-    recipientLabel: string
+    recipientLabel: string,
   ): void {
     const left = field.locations.left * viewport.scale;
     const width = field.locations.width * viewport.scale;
@@ -122,9 +112,9 @@ export class CanvasRendererService {
     const top = this.coordService.getCanvasPosition(field.locations.top, viewport, documentType);
 
     // Draw field background and border
-    ctx.strokeStyle = isSelected ? '#1890ff' : (isHovered ? '#40a9ff' : color);
-    ctx.fillStyle = (isSelected ? '#1890ff' : (isHovered ? '#40a9ff' : color)) + '33';
-    ctx.lineWidth = isSelected ? 3 : (isHovered ? 2.5 : 2);
+    ctx.strokeStyle = isSelected ? '#1890ff' : isHovered ? '#40a9ff' : color;
+    ctx.fillStyle = (isSelected ? '#1890ff' : isHovered ? '#40a9ff' : color) + '33';
+    ctx.lineWidth = isSelected ? 3 : isHovered ? 2.5 : 2;
 
     ctx.fillRect(left, top, width, height);
     ctx.strokeRect(left, top, width, height);
@@ -148,7 +138,7 @@ export class CanvasRendererService {
     ctx.fillText(
       `(${field.locations.left?.toFixed?.(0) || 0}, ${field.locations.top?.toFixed?.(0) || 0})`,
       left + 3,
-      top + height - 3
+      top + height - 3,
     );
 
     // Draw required indicator
@@ -167,19 +157,14 @@ export class CanvasRendererService {
     startY: number,
     currentX: number,
     currentY: number,
-    viewport: any,
-    documentType: AdobeDocumentType
+    viewport: ViewportGeometry,
+    documentType: AdobeDocumentType,
   ): void {
     // Draw preview rectangle
     ctx.strokeStyle = '#1890ff';
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
-    ctx.strokeRect(
-      startX,
-      startY,
-      currentX - startX,
-      currentY - startY
-    );
+    ctx.strokeRect(startX, startY, currentX - startX, currentY - startY);
 
     // Calculate and display coordinates
     const pixelLeft = Math.min(startX, currentX);
@@ -188,7 +173,7 @@ export class CanvasRendererService {
     const pixelHeight = Math.abs(currentY - startY);
 
     const pointsLeft = this.coordService.pixelsToPoints(pixelLeft, viewport.scale);
-    const pointsTop = this.coordService.convertYCoordinate(pixelTop, pixelHeight, viewport, documentType);
+    const pointsTop = this.coordService.convertYCoordinate(pixelTop, viewport, documentType);
     const pointsWidth = this.coordService.pixelsToPoints(pixelWidth, viewport.scale);
     const pointsHeight = this.coordService.pixelsToPoints(pixelHeight, viewport.scale);
 
@@ -198,7 +183,7 @@ export class CanvasRendererService {
     ctx.fillText(
       `L: ${pointsLeft.toFixed(1)}, T: ${pointsTop.toFixed(1)}, W: ${pointsWidth.toFixed(1)}, H: ${pointsHeight.toFixed(1)}`,
       pixelLeft,
-      pixelTop - 5
+      pixelTop - 5,
     );
   }
 
@@ -209,8 +194,8 @@ export class CanvasRendererService {
     x: number,
     y: number,
     field: Field,
-    viewport: any,
-    documentType: AdobeDocumentType
+    viewport: ViewportGeometry,
+    documentType: AdobeDocumentType,
   ): boolean {
     const left = field.locations.left * viewport.scale;
     const width = field.locations.width * viewport.scale;

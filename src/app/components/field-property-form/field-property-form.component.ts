@@ -1,114 +1,75 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject, input, linkedSignal, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { NzFormModule } from 'ng-zorro-antd/form';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
-import { NzSelectModule } from 'ng-zorro-antd/select';
-import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
+import { NzFormModule } from 'ng-zorro-antd/form';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzSelectModule } from 'ng-zorro-antd/select';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Field } from '../../models/field.model';
 import { FieldTypeService } from '../../services/field-type.service';
+
+type LocationKey = 'left' | 'top' | 'width' | 'height';
 
 @Component({
   selector: 'app-field-property-form',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
     FormsModule,
     NzFormModule,
     NzInputModule,
-    NzInputNumberModule,
     NzSelectModule,
     NzCheckboxModule,
     NzButtonModule,
     NzIconModule,
     NzTagModule,
-    NzCardModule
+    NzCardModule,
   ],
   templateUrl: './field-property-form.component.html',
-  styleUrls: ['./field-property-form.component.less']
+  styleUrls: ['./field-property-form.component.less'],
 })
-export class FieldPropertyFormComponent implements OnInit, OnChanges {
-  @Input() field!: Field;
-  @Output() fieldUpdated = new EventEmitter<Partial<Field>>();
-  @Output() deleteClicked = new EventEmitter<void>();
+export class FieldPropertyFormComponent {
+  protected readonly fieldTypeService = inject(FieldTypeService);
 
-  // Local copy of field for editing
-  localField: Field | null = null;
+  readonly field = input.required<Field>();
+  readonly fieldUpdated = output<Partial<Field>>();
+  readonly deleteClicked = output<void>();
 
-  constructor(public fieldTypeService: FieldTypeService) {}
+  /** What the inputs show; follows `field` and is edited without touching the original. */
+  protected readonly localField = linkedSignal<Field>(() => {
+    const field = this.field();
+    return { ...field, locations: { ...field.locations } };
+  });
 
-  ngOnInit(): void {
-    this.initializeLocalField();
+  protected onNameChange(name: string): void {
+    this.localField.update((field) => ({ ...field, name }));
+    this.fieldUpdated.emit({ name });
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['field']) {
-      this.initializeLocalField();
-    }
+  protected onLocationChange(key: LocationKey, value: number | null): void {
+    // An emptied or half-typed number input reports null / NaN: wait for a real number.
+    if (value === null || !Number.isFinite(value)) return;
+
+    const locations = { ...this.localField().locations, [key]: Math.max(0, value) };
+    this.localField.update((field) => ({ ...field, locations }));
+    this.fieldUpdated.emit({ locations });
   }
 
-  private initializeLocalField(): void {
-    if (this.field) {
-      // Create a deep copy to avoid mutating the original
-      this.localField = {
-        ...this.field,
-        locations: { ...this.field.locations }
-      };
-    }
+  protected onRecipientChange(recipientIndex: number): void {
+    this.localField.update((field) => ({ ...field, recipientIndex }));
+    this.fieldUpdated.emit({ recipientIndex });
   }
 
-  onFieldNameChange(value: string): void {
-    if (this.localField) {
-      this.localField.name = value;
-      this.fieldUpdated.emit({ name: value });
-    }
+  protected onRequiredChange(required: boolean): void {
+    this.localField.update((field) => ({ ...field, required }));
+    this.fieldUpdated.emit({ required });
   }
 
-  onPositionChange(property: 'left' | 'top', value: number): void {
-    if (this.localField) {
-      this.localField.locations[property] = value;
-      this.fieldUpdated.emit({
-        locations: { ...this.localField.locations }
-      });
-    }
-  }
-
-  onSizeChange(property: 'width' | 'height', value: number): void {
-    if (this.localField) {
-      this.localField.locations[property] = value;
-      this.fieldUpdated.emit({
-        locations: { ...this.localField.locations }
-      });
-    }
-  }
-
-  onRecipientChange(value: number): void {
-    if (this.localField) {
-      this.localField.recipientIndex = value;
-      this.fieldUpdated.emit({ recipientIndex: value });
-    }
-  }
-
-  onRequiredChange(value: boolean): void {
-    if (this.localField) {
-      this.localField.required = value;
-      this.fieldUpdated.emit({ required: value });
-    }
-  }
-
-  onReadOnlyChange(value: boolean): void {
-    if (this.localField) {
-      this.localField.readOnly = value;
-      this.fieldUpdated.emit({ readOnly: value });
-    }
-  }
-
-  onDelete(): void {
-    this.deleteClicked.emit();
+  protected onReadOnlyChange(readOnly: boolean): void {
+    this.localField.update((field) => ({ ...field, readOnly }));
+    this.fieldUpdated.emit({ readOnly });
   }
 }

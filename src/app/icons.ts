@@ -1,0 +1,68 @@
+import {
+  BlockOutline,
+  CalendarOutline,
+  CheckCircleOutline,
+  CheckSquareOutline,
+  CodeOutline,
+  DeleteOutline,
+  DownloadOutline,
+  EditOutline,
+  ExportOutline,
+  FilePdfOutline,
+  FileTextOutline,
+  FontSizeOutline,
+  HighlightOutline,
+  LeftOutline,
+  MailOutline,
+  MenuFoldOutline,
+  MenuUnfoldOutline,
+  QuestionOutline,
+  RedoOutline,
+  RightOutline,
+  SearchOutline,
+  TableOutline,
+  UndoOutline,
+  UploadOutline,
+  UserOutline,
+  SelectOutline,
+  ZoomInOutline,
+  ZoomOutOutline,
+} from '@ant-design/icons-angular/icons';
+
+/**
+ * Every Ant Design icon the app asks for by name, in templates (`nzType="..."`) and in
+ * FieldTypeService (`icon: '...'`). ng-zorro registers the icons its own components use.
+ * Registering only these keeps the other ~800 icons out of the bundle; an icon added to a
+ * template or a preset must be added here too. icons.spec.ts checks the preset icons and a list
+ * of the template icons; add a new template icon to that list as well.
+ */
+export const APP_ICONS = [
+  BlockOutline,
+  CalendarOutline,
+  CheckCircleOutline,
+  CheckSquareOutline,
+  CodeOutline,
+  DeleteOutline,
+  DownloadOutline,
+  EditOutline,
+  ExportOutline,
+  FilePdfOutline,
+  FileTextOutline,
+  FontSizeOutline,
+  HighlightOutline,
+  LeftOutline,
+  MailOutline,
+  MenuFoldOutline,
+  MenuUnfoldOutline,
+  QuestionOutline,
+  RedoOutline,
+  RightOutline,
+  SearchOutline,
+  TableOutline,
+  UndoOutline,
+  UploadOutline,
+  UserOutline,
+  SelectOutline,
+  ZoomInOutline,
+  ZoomOutOutline,
+];

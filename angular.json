@@ -29,20 +29,12 @@
                 "input": "public"
               },
               {
-                "glob": "**/*",
-                "input": "./node_modules/@ant-design/icons-angular/src/inline-svg/",
-                "output": "/assets/"
-              },
-              {
                 "glob": "pdf.worker.min.mjs",
                 "input": "node_modules/pdfjs-dist/build/",
                 "output": "assets/pdfjs/"
               }
             ],
-            "styles": [
-              "./node_modules/ng-zorro-antd/ng-zorro-antd.min.css",
-              "src/styles.less"
-            ],
+            "styles": ["src/styles.less"],
             "scripts": []
           },
           "configurations": {
@@ -55,7 +47,7 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
+                  "maximumWarning": "5kB",
                   "maximumError": "8kB"
                 }
               ],
@@ -96,21 +88,20 @@
                 "input": "public"
               },
               {
-                "glob": "**/*",
-                "input": "./node_modules/@ant-design/icons-angular/src/inline-svg/",
-                "output": "/assets/"
-              },
-              {
                 "glob": "pdf.worker.min.mjs",
                 "input": "node_modules/pdfjs-dist/build/",
                 "output": "assets/pdfjs/"
               }
             ],
-            "styles": [
-              "./node_modules/ng-zorro-antd/ng-zorro-antd.min.css",
-              "src/styles.less"
-            ],
-            "scripts": []
+            "styles": ["src/styles.less"],
+            "scripts": [],
+            "karmaConfig": "karma.conf.js"
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
           }
         }
       }

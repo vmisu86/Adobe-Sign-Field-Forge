@@ -1,913 +1,341 @@
-import { Component, OnInit, ViewChild, ElementRef, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  effect,
+  ElementRef,
+  HostListener,
+  inject,
+  untracked,
+  viewChild,
+} from '@angular/core';
 import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzUploadModule } from 'ng-zorro-antd/upload';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzDividerModule } from 'ng-zorro-antd/divider';
-import { NzSelectModule } from 'ng-zorro-antd/select';
-import { NzSpaceModule } from 'ng-zorro-antd/space';
-import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
-import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
-import { NzLayoutModule } from 'ng-zorro-antd/layout';
-import { NzCardModule } from 'ng-zorro-antd/card';
-import { NzAlertModule } from 'ng-zorro-antd/alert';
-import { NzBadgeModule } from 'ng-zorro-antd/badge';
-import { NzTagModule } from 'ng-zorro-antd/tag';
-import { NzListModule } from 'ng-zorro-antd/list';
-import { NzFormModule } from 'ng-zorro-antd/form';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
-import { NzSwitchModule } from 'ng-zorro-antd/switch';
-import { NzEmptyModule } from 'ng-zorro-antd/empty';
-import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import * as pdfjsLib from 'pdfjs-dist';
-
-import { PdfFieldService } from '../../services/pdf-field.service';
-import { HistoryService } from '../../services/history.service';
-import { CoordinateConversionService } from '../../services/coordinate-conversion.service';
-import { FieldInteractionService } from '../../services/field-interaction.service';
 import { CanvasRendererService } from '../../services/canvas-renderer.service';
+import { CoordinateConversionService } from '../../services/coordinate-conversion.service';
+import { EditorStateService } from '../../services/editor-state.service';
+import { FieldEditorService } from '../../services/field-editor.service';
 import { FieldTypeService } from '../../services/field-type.service';
-import { AdobeDocumentType, Field, FieldTypeCombination, FormFieldContentType, FormFieldInputType } from '../../models/field.model';
-
-// Import new child components
-import { ToolbarComponent } from '../toolbar/toolbar.component';
-import { FieldTypeSidebarComponent } from '../field-type-sidebar/field-type-sidebar.component';
+import { FileActionsService } from '../../services/file-actions.service';
+import { PdfDocumentService } from '../../services/pdf-document.service';
+import { PdfFieldService } from '../../services/pdf-field.service';
+import { PAGE_GUTTER, sizeCanvas } from '../../utils/zoom';
 import { FieldPropertiesSidebarComponent } from '../field-properties-sidebar/field-properties-sidebar.component';
+import { FieldTypeSidebarComponent } from '../field-type-sidebar/field-type-sidebar.component';
+import { StatusBarComponent } from '../status-bar/status-bar.component';
+import { ToolbarComponent } from '../toolbar/toolbar.component';
 
-(pdfjsLib as any).GlobalWorkerOptions.workerSrc =
-  `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.3.31/pdf.worker.mjs`;
+/** Wheel and pinch events arrive in bursts; one zoom step per this many milliseconds is enough. */
+const WHEEL_ZOOM_INTERVAL_MS = 120;
 
+/** Space to leave above a field when scrolling to it, so it is not flush with the edge. */
+const REVEAL_MARGIN_PX = 96;
+
+/**
+ * The page layout and the two canvases: one with the PDF page, one on top of it with the fields.
+ * What the mouse does is decided by FieldEditorService; this component only turns DOM events into
+ * canvas coordinates, paints the state it finds, and keeps the page fitted to the window.
+ */
 @Component({
   selector: 'app-pdf-viewer',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
-    FormsModule,
     NzButtonModule,
-    NzUploadModule,
     NzIconModule,
-    NzDividerModule,
-    NzSelectModule,
-    NzSpaceModule,
-    NzToolTipModule,
-    NzModalModule,
-    NzLayoutModule,
-    NzCardModule,
-    NzAlertModule,
-    NzBadgeModule,
-    NzTagModule,
-    NzListModule,
-    NzFormModule,
-    NzInputModule,
-    NzInputNumberModule,
-    NzSwitchModule,
-    NzEmptyModule,
-    NzCheckboxModule,
-    // New child components
     ToolbarComponent,
     FieldTypeSidebarComponent,
-    FieldPropertiesSidebarComponent
+    FieldPropertiesSidebarComponent,
+    StatusBarComponent,
   ],
   templateUrl: './pdf-viewer.component.html',
-  styleUrls: ['./pdf-viewer.component.less']
 })
-export class PdfViewerComponent implements OnInit {
-  @ViewChild('pdfCanvas', { static: false }) pdfCanvas!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('drawingCanvas', { static: false }) drawingCanvas!: ElementRef<HTMLCanvasElement>;
+export class PdfViewerComponent {
+  protected readonly state = inject(EditorStateService);
+  protected readonly pdf = inject(PdfDocumentService);
+  protected readonly actions = inject(FileActionsService);
+  private readonly editor = inject(FieldEditorService);
+  private readonly fields = inject(PdfFieldService);
+  private readonly renderer = inject(CanvasRendererService);
+  private readonly coords = inject(CoordinateConversionService);
+  private readonly fieldTypes = inject(FieldTypeService);
+  private readonly message = inject(NzMessageService);
 
-  // PDF state
-  pdfDocument: any = null;
-  currentPage = 1;
-  totalPages = 0;
-  scale = 1.5;
+  private readonly workspace = viewChild<ElementRef<HTMLElement>>('workspace');
+  private readonly pdfCanvas = viewChild<ElementRef<HTMLCanvasElement>>('pdfCanvas');
+  private readonly overlayCanvas = viewChild<ElementRef<HTMLCanvasElement>>('drawingCanvas');
 
-  // Drawing state
-  isDrawing = false;
-  showGrid = false;
-  drawingStart: { x: number; y: number } | null = null;
+  private pendingFrame = 0;
+  private lastWheelZoom = 0;
 
-  // Field state
-  selectedField: Field | null = null;
-  hoveredField: Field | null = null;
-  fields: Field[] = [];
+  constructor() {
+    // Keep the page fitted to the workspace: tell the document service how wide the workspace is.
+    effect((onCleanup) => {
+      const element = this.workspace()?.nativeElement;
+      if (!element) return;
+      const observer = new ResizeObserver(() => this.pdf.setAvailableWidth(element.clientWidth - PAGE_GUTTER));
+      observer.observe(element);
+      onCleanup(() => observer.disconnect());
+    });
 
-  // Interaction settings
-  snapToGrid = false;
-  gridSize = 10;
+    // Draw the PDF page whenever the document, the page, the zoom or the canvas element changes.
+    effect(() => {
+      const canvas = this.pdfCanvas()?.nativeElement;
+      const page = this.pdf.currentPage();
+      this.pdf.scaleInput();
+      if (canvas && this.pdf.document()) {
+        untracked(() => void this.renderPage(canvas, page));
+      }
+    });
 
-  // UI state
-  canUndo = false;
-  canRedo = false;
-  selectedFieldType: any = 'TEXT_FIELD';
-  recipientIndex = 1;
-  documentType: AdobeDocumentType = AdobeDocumentType.TRANSIENT;
-  leftSidebarCollapsed = false;
-  rightSidebarCollapsed = false;
-  searchFieldType = '';
+    // Repaint the overlay whenever anything it shows changes. Several changes in one frame
+    // (a mouse move touches the field and the hover state) are painted once.
+    effect(() => {
+      this.overlayCanvas();
+      this.pdf.viewport();
+      this.pdf.currentPage();
+      this.fields.fields();
+      this.state.selectedFieldId();
+      this.state.hoveredFieldId();
+      this.state.showGrid();
+      this.state.documentType();
+      this.state.drawing();
+      this.state.selectedTypeKey();
+      // The placement preview follows the mouse, so only then is the pointer worth repainting for.
+      if (this.state.armed() && !this.state.drawing()) {
+        this.state.pointer();
+      }
+      this.scheduleOverlayPaint();
+    });
 
-  // Field type configuration
-  fieldTypeCombinations: any[] = [];
-  fieldTypeGroups: any[] = [];
-  FormFieldInputType = FormFieldInputType;
+    // A field picked in the list: once its page is on screen, scroll it into view.
+    effect(() => {
+      const id = this.state.revealRequest();
+      const viewport = this.pdf.viewport();
+      const rendered = this.pdf.renderedPage();
+      const field = id === null ? undefined : this.fields.fields().find((f) => f.id === id);
+      if (!field || !viewport || field.locations.pageNumber !== rendered) return;
+      untracked(() => {
+        this.scrollToField(field.locations.top);
+        this.state.revealRequest.set(null);
+      });
+    });
 
-  private renderTask: any = null;
-  private isRendering = false;
+    inject(DestroyRef).onDestroy(() => cancelAnimationFrame(this.pendingFrame));
+  }
 
-  constructor(
-    private pdfFieldService: PdfFieldService,
-    public historyService: HistoryService,
-    private modal: NzModalService,
-    private message: NzMessageService,
-    private coordService: CoordinateConversionService,
-    private interactionService: FieldInteractionService,
-    private canvasRenderer: CanvasRendererService,
-    public fieldTypeService: FieldTypeService
-  ) {
-    this.fieldTypeCombinations = this.fieldTypeService.getFieldTypeCombinations();
-    this.fieldTypeGroups = this.fieldTypeService.getFieldTypeGroups();
+  // ------------------------------------------------------------------ mouse
 
-    // Set default selected field type to the first item
-    const defaultField = this.fieldTypeGroups[0]?.items[0];
-    if (defaultField) {
-      this.selectedFieldType = `${defaultField.label}_${defaultField.inputType}_${defaultField.contentType}`.toLowerCase();
+  protected onMouseDown(event: MouseEvent): void {
+    this.editor.pointerDown(this.canvasPoint(event));
+  }
+
+  protected onMouseMove(event: MouseEvent): void {
+    this.editor.pointerMove(this.canvasPoint(event));
+  }
+
+  protected onMouseLeave(): void {
+    this.editor.pointerLeave();
+  }
+
+  /** Listening on the window means a drag that ends outside the canvas still ends. */
+  @HostListener('window:mouseup', ['$event'])
+  protected onMouseUp(event: MouseEvent): void {
+    if (!this.overlayCanvas()) return;
+    const point = this.canvasPoint(event);
+    this.editor.pointerUp(point);
+    this.editor.pointerMove(point); // refresh hover and cursor for the new position
+  }
+
+  /** Ctrl (or Cmd) + wheel, which is also how a trackpad pinch arrives, zooms the page. */
+  protected onWheel(event: WheelEvent): void {
+    if (!(event.ctrlKey || event.metaKey) || !this.pdf.document()) return;
+    event.preventDefault();
+
+    const now = performance.now();
+    if (now - this.lastWheelZoom < WHEEL_ZOOM_INTERVAL_MS) return;
+    this.lastWheelZoom = now;
+
+    if (event.deltaY < 0) {
+      this.pdf.zoomIn();
+    } else if (event.deltaY > 0) {
+      this.pdf.zoomOut();
     }
   }
 
-  ngOnInit(): void {
-    this.initializeSubscriptions();
+  protected setKeepDrawing(event: Event): void {
+    this.state.keepDrawing.set((event.target as HTMLInputElement).checked);
   }
+
+  protected stopDrawing(): void {
+    this.editor.selectTool();
+  }
+
+  // --------------------------------------------------------------- keyboard
 
   @HostListener('window:keydown', ['$event'])
-  onKeyDown(event: KeyboardEvent): void {
-    this.handleKeyboardShortcuts(event);
-  }
+  protected onKeyDown(event: KeyboardEvent): void {
+    if (isTypingTarget(event.target)) return;
 
-  @HostListener('window:resize')
-  onResize(): void {
-    if (this.pdfDocument && this.currentPage) {
-      this.renderPage(this.currentPage);
-    }
-  }
+    const modifier = event.ctrlKey || event.metaKey;
+    const key = event.key.toLowerCase();
 
-  // ==================== Initialization ====================
-
-  private initializeSubscriptions(): void {
-    this.pdfFieldService.pdfDocument$.subscribe(async (pdfDoc) => {
-      if (pdfDoc) {
-        this.pdfDocument = pdfDoc;
-        this.totalPages = pdfDoc.numPages;
-        this.currentPage = 1;
-        await this.renderPage(this.currentPage);
-      }
-    });
-
-    this.pdfFieldService.fields$.subscribe(fields => {
-      this.fields = fields;
-      this.redrawOverlay();
-    });
-
-    this.historyService.canUndo$.subscribe(canUndo => this.canUndo = canUndo);
-    this.historyService.canRedo$.subscribe(canRedo => this.canRedo = canRedo);
-  }
-
-  // ==================== Keyboard Shortcuts ====================
-
-  private handleKeyboardShortcuts(event: KeyboardEvent): void {
-    if (event.ctrlKey && event.key === 'z' && !event.shiftKey) {
+    if (modifier && key === 'z' && !event.shiftKey) {
       event.preventDefault();
-      this.historyService.undo();
-      this.selectedField = null;
-      this.redrawOverlay();
-      return;
-    }
-
-    if ((event.ctrlKey && event.shiftKey && event.key === 'Z') || (event.ctrlKey && event.key === 'y')) {
+      this.editor.undo();
+    } else if (modifier && ((key === 'z' && event.shiftKey) || key === 'y')) {
       event.preventDefault();
-      this.historyService.redo();
-      this.selectedField = null;
-      this.redrawOverlay();
-      return;
-    }
-
-    if (event.key === 'Delete' || event.key === 'Backspace') {
-      if (this.selectedField && !this.isDrawing) {
+      this.editor.redo();
+    } else if (key === 'delete' || key === 'backspace') {
+      if (this.state.selectedField() && !this.state.drawing()) {
         event.preventDefault();
-        this.pdfFieldService.deleteField(this.selectedField.id);
-        this.selectedField = null;
-        this.redrawOverlay();
+        this.editor.deleteSelected();
       }
-      return;
-    }
-
-    if (event.key === 'Escape') {
-      if (this.interactionService.getState().isDragging || this.interactionService.getState().isResizing) {
-        this.interactionService.cancelOperation();
-        this.redrawOverlay();
-      } else if (this.selectedField) {
-        this.selectedField = null;
-        this.redrawOverlay();
-      }
-      return;
+    } else if (key === 'escape') {
+      this.editor.escape();
+    } else if (!modifier && !event.altKey) {
+      this.onPlainKey(event, key);
     }
   }
 
-  // ==================== PDF Loading & Rendering ====================
-
-  beforeUpload = (file: any) => {
-    const nativeFile: File = file.originFileObj || file;
-    if (nativeFile.type !== 'application/pdf') {
-      return false;
-    }
-    const reader = new FileReader();
-    reader.onload = (e: any) => {
-      this.loadPdf(e.target.result);
-    };
-    reader.readAsArrayBuffer(nativeFile);
-    return false;
-  };
-
-  async onFileSelected(event: any): Promise<void> {
-    const file = event.file || event.target?.files?.[0];
-    if (file && file.type === 'application/pdf') {
-      const arrayBuffer = await file.arrayBuffer();
-      await this.loadPdf(arrayBuffer);
+  /** Single-key shortcuts: tools (V, T, S, ...) and zoom (+, -, 0). */
+  private onPlainKey(event: KeyboardEvent, key: string): void {
+    if (key === 'v') {
+      this.editor.selectTool();
+    } else if (key === '+' || key === '=') {
+      this.pdf.zoomIn();
+    } else if (key === '-') {
+      this.pdf.zoomOut();
+    } else if (key === '0') {
+      this.pdf.fitWidth();
+    } else if (key.length === 1 && this.pdf.document() && this.editor.armByShortcut(key)) {
+      event.preventDefault();
     }
   }
 
-  async loadPdf(arrayBuffer: ArrayBuffer): Promise<void> {
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-    this.pdfDocument = await loadingTask.promise;
-    this.totalPages = this.pdfDocument.numPages;
-    this.currentPage = 1;
-    this.pdfFieldService.setPdfDocument(this.pdfDocument);
+  // ------------------------------------------------------------- rendering
 
-    setTimeout(() => {
-      this.renderPage(this.currentPage);
-    }, 100);
-  }
-
-  async renderPage(pageNumber: number): Promise<void> {
-    if (!this.pdfDocument || !this.pdfCanvas) return;
-
-    if (this.renderTask) {
-      try {
-        await this.renderTask.cancel();
-      } catch (error) {
-        // Silently ignore cancellation errors
-      }
-      this.renderTask = null;
-    }
-
-    if (this.isRendering) return;
-
+  private async renderPage(canvas: HTMLCanvasElement, page: number): Promise<void> {
     try {
-      this.isRendering = true;
-
-      const page = await this.pdfDocument.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: this.scale });
-
-      const canvas = this.pdfCanvas.nativeElement;
-      const context = canvas.getContext('2d')!;
-
-      this.canvasRenderer.clearCanvas(canvas);
-
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-
-      if (this.drawingCanvas) {
-        const drawCanvas = this.drawingCanvas.nativeElement;
-        drawCanvas.height = viewport.height;
-        drawCanvas.width = viewport.width;
+      const viewport = await this.pdf.render(page, canvas);
+      const overlay = this.overlayCanvas()?.nativeElement;
+      if (viewport && overlay) {
+        sizeCanvas(overlay, viewport.width, viewport.height, canvas.width / viewport.width);
       }
-
-      const renderContext = {
-        canvasContext: context,
-        viewport: viewport
-      };
-
-      this.renderTask = page.render(renderContext);
-      await this.renderTask.promise;
-
-      this.renderTask = null;
-
-      this.pdfFieldService.setCurrentPage(pageNumber);
-      this.pdfFieldService.setCurrentViewport(viewport);
-      this.redrawOverlay();
     } catch (error) {
-      if ((error as any).name !== 'RenderingCancelledException') {
-        console.error('Error rendering page:', error);
-      }
-    } finally {
-      this.isRendering = false;
+      console.error('Error rendering page', error);
+      this.message.error('That page could not be drawn.');
     }
   }
 
-  previousPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      this.renderPage(this.currentPage);
-    }
+  private scheduleOverlayPaint(): void {
+    if (this.pendingFrame) return;
+    this.pendingFrame = requestAnimationFrame(() => {
+      this.pendingFrame = 0;
+      this.paintOverlay();
+    });
   }
 
-  nextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-      this.renderPage(this.currentPage);
-    }
-  }
+  private paintOverlay(): void {
+    const canvas = this.overlayCanvas()?.nativeElement;
+    const ctx = canvas?.getContext('2d');
+    const viewport = this.pdf.viewport();
+    if (!canvas || !ctx) return;
 
-  // ==================== Mouse Event Handlers ====================
-
-  onMouseDown(event: MouseEvent): void {
-    const coords = this.coordService.getCanvasCoordinates(event, this.drawingCanvas.nativeElement);
-    const viewport = this.getCurrentViewport();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.renderer.clearCanvas(canvas);
     if (!viewport) return;
 
-    // First, check if clicking on a resize handle of the selected field
-    if (this.selectedField) {
-      const handle = this.interactionService.getResizeHandleAtPoint(
-        coords.x,
-        coords.y,
-        this.selectedField,
+    // Everything below is drawn in CSS pixels; the backing store is denser on high-DPI screens.
+    const pixelRatio = canvas.width / viewport.width;
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+    const documentType = this.state.documentType();
+    if (this.state.showGrid()) {
+      this.renderer.drawGrid(ctx, viewport, documentType);
+    }
+
+    const page = this.pdf.currentPage();
+    const selectedId = this.state.selectedFieldId();
+    const hoveredId = this.state.hoveredFieldId();
+    for (const field of this.fields.fields()) {
+      if (field.locations.pageNumber !== page) continue;
+      this.renderer.drawField(
+        ctx,
+        field,
         viewport,
-        this.documentType
-      );
-
-      if (handle) {
-        this.interactionService.startResize(this.selectedField, handle, coords.x, coords.y);
-        return;
-      }
-    }
-
-    // Second, check if clicking on an existing field
-    const fieldAtPoint = this.getFieldAtPoint(coords.x, coords.y);
-
-    if (fieldAtPoint) {
-      // Clicking on a field - select it and allow dragging
-      if (this.selectedField?.id !== fieldAtPoint.id) {
-        this.selectedField = fieldAtPoint;
-        this.redrawOverlay();
-      }
-      this.interactionService.startDrag(fieldAtPoint, coords.x, coords.y);
-    } else {
-      // Clicking on empty canvas - start drawing if a field type is selected
-      if (this.selectedFieldType && this.getSelectedFieldType()) {
-        this.drawingStart = coords;
-        this.isDrawing = true;
-      }
-      this.selectedField = null;
-      this.redrawOverlay();
-    }
-  }
-
-  onMouseMove(event: MouseEvent): void {
-    const coords = this.coordService.getCanvasCoordinates(event, this.drawingCanvas.nativeElement);
-    const viewport = this.getCurrentViewport();
-    if (!viewport) return;
-
-    const state = this.interactionService.getState();
-
-    if (state.isDragging && this.selectedField) {
-      this.handleDragMove(coords, viewport);
-      return;
-    }
-
-    if (state.isResizing && this.selectedField) {
-      this.handleResizeMove(coords, viewport);
-      return;
-    }
-
-    if (this.isDrawing && this.drawingStart) {
-      this.handleDrawingMove(coords, viewport);
-      return;
-    }
-
-    this.updateHoverState(coords, viewport);
-    this.updateCursor(coords.x, coords.y, viewport);
-  }
-
-  onMouseUp(event: MouseEvent): void {
-    const coords = this.coordService.getCanvasCoordinates(event, this.drawingCanvas.nativeElement);
-    const state = this.interactionService.getState();
-
-    if (state.isDragging && this.selectedField) {
-      this.completeDragOperation();
-      this.updateCursorAfterOperation(coords.x, coords.y);
-      return;
-    }
-
-    if (state.isResizing && this.selectedField) {
-      this.completeResizeOperation();
-      this.updateCursorAfterOperation(coords.x, coords.y);
-      return;
-    }
-
-    if (this.isDrawing && this.drawingStart) {
-      this.completeFieldCreation(coords);
-      this.isDrawing = false; // Reset drawing state after field creation
-    }
-  }
-
-  // ==================== Interaction Handlers ====================
-
-  private handleDragMove(coords: { x: number; y: number }, viewport: any): void {
-    const newPosition = this.interactionService.calculateDragPosition(
-      coords.x,
-      coords.y,
-      viewport,
-      this.documentType,
-      this.snapToGrid,
-      this.gridSize
-    );
-
-    if (newPosition && this.selectedField) {
-      this.pdfFieldService.moveField(this.selectedField.id, newPosition.left, newPosition.top, false);
-    }
-  }
-
-  private handleResizeMove(coords: { x: number; y: number }, viewport: any): void {
-    const newBounds = this.interactionService.calculateResizeBounds(
-      coords.x,
-      coords.y,
-      viewport,
-      this.documentType,
-      this.snapToGrid,
-      this.gridSize
-    );
-
-    if (newBounds && this.selectedField) {
-      this.pdfFieldService.resizeField(
-        this.selectedField.id,
-        newBounds.left,
-        newBounds.top,
-        newBounds.width,
-        newBounds.height,
-        false
-      );
-    }
-  }
-
-  private handleDrawingMove(coords: { x: number; y: number }, viewport: any): void {
-    if (!this.drawingStart) return;
-
-    const ctx = this.drawingCanvas.nativeElement.getContext('2d')!;
-    this.redrawOverlay();
-
-    this.canvasRenderer.drawFieldPreview(
-      ctx,
-      this.drawingStart.x,
-      this.drawingStart.y,
-      coords.x,
-      coords.y,
-      viewport,
-      this.documentType
-    );
-  }
-
-  private completeDragOperation(): void {
-    const result = this.interactionService.completeDrag();
-    if (!result || !this.selectedField) return;
-
-    const fieldId = this.selectedField.id;
-    const currentField = this.fields.find(f => f.id === fieldId);
-
-    if (currentField) {
-      if (currentField.locations.left !== result.startPos.left ||
-        currentField.locations.top !== result.startPos.top) {
-        this.pdfFieldService.moveField(
-          currentField.id,
-          currentField.locations.left,
-          currentField.locations.top,
-          true,
-          result.startPos.left,
-          result.startPos.top
-        );
-      }
-    }
-
-    this.selectedField = this.fields.find(f => f.id === fieldId) || null;
-    this.redrawOverlay();
-  }
-
-  private completeResizeOperation(): void {
-    const result = this.interactionService.completeResize();
-    if (!result || !this.selectedField) return;
-
-    const fieldId = this.selectedField.id;
-    const currentField = this.fields.find(f => f.id === fieldId);
-
-    if (currentField) {
-      const bounds = result.startBounds;
-      if (currentField.locations.left !== bounds.left ||
-        currentField.locations.top !== bounds.top ||
-        currentField.locations.width !== bounds.width ||
-        currentField.locations.height !== bounds.height) {
-        this.pdfFieldService.resizeField(
-          currentField.id,
-          currentField.locations.left,
-          currentField.locations.top,
-          currentField.locations.width,
-          currentField.locations.height,
-          true,
-
-          bounds
-        );
-      }
-    }
-
-    this.selectedField = this.fields.find(f => f.id === fieldId) || null;
-    this.redrawOverlay();
-  }
-
-  private completeFieldCreation(coords: { x: number; y: number }): void {
-    if (!this.drawingStart) return;
-
-    const viewport = this.getCurrentViewport();
-    if (!viewport) return;
-
-    const selectedType = this.getSelectedFieldType();
-    if (!selectedType) return;
-
-    const pixelLeft = Math.min(this.drawingStart.x, coords.x);
-    const pixelTop = Math.min(this.drawingStart.y, coords.y);
-    const pixelWidth = Math.abs(coords.x - this.drawingStart.x);
-    const pixelHeight = Math.abs(coords.y - this.drawingStart.y);
-
-    const pointsLeft = this.coordService.pixelsToPoints(pixelLeft, viewport.scale);
-    const pointsWidth = this.coordService.pixelsToPoints(pixelWidth, viewport.scale);
-    const pointsHeight = this.coordService.pixelsToPoints(pixelHeight, viewport.scale);
-    const pointsTop = this.coordService.convertYCoordinate(pixelTop, pixelHeight, viewport, this.documentType);
-
-    const field: Field = {
-      id: `field_${Date.now()}`,
-      name: this.fieldTypeService.generateSmartFieldName(
-        selectedType.inputType,
-        selectedType.contentType ?? FormFieldContentType.DATA,
-        this.fields
-      ),
-      inputType: selectedType.inputType,
-      contentType: selectedType.contentType ?? FormFieldContentType.DATA,
-      readOnly: selectedType.readOnly,
-      required: false,
-      validation: selectedType.validation,
-      validationData: selectedType.validationData,
-      locations: {
-        pageNumber: this.currentPage,
-        left: Number(pointsLeft) || 0,
-        top: Number(pointsTop) || 0,
-        width: Number(pointsWidth) || 0,
-        height: Number(pointsHeight) || 0
-      },
-      recipientIndex: this.recipientIndex,
-    };
-
-    this.pdfFieldService.addField(field);
-    this.drawingStart = null;
-    // Keep drawing mode active for continuous field creation
-  }
-
-  // ==================== Canvas Rendering ====================
-
-  redrawOverlay(): void {
-    if (!this.drawingCanvas) return;
-
-    const canvas = this.drawingCanvas.nativeElement;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    this.canvasRenderer.clearCanvas(canvas);
-
-    const viewport = this.getCurrentViewport();
-    if (!viewport) return;
-
-    if (this.showGrid) {
-      this.canvasRenderer.drawGrid(ctx, viewport, this.documentType);
-    }
-
-    this.fields
-      .filter(field => field.locations.pageNumber === this.currentPage)
-      .forEach(field => {
-        const color = this.fieldTypeService.getFieldColor(field);
-        const isSelected = this.selectedField?.id === field.id;
-        const isHovered = this.hoveredField?.id === field.id;
-        const recipientLabel = this.getRecipientLabel(field.recipientIndex);
-
-        this.canvasRenderer.drawField(
-          ctx,
-          field,
-          viewport,
-          this.documentType,
-          color,
-          isSelected,
-          isHovered,
-          recipientLabel
-        );
-      });
-  }
-
-  // ==================== Helper Methods ====================
-
-  private getCurrentViewport(): any {
-    let viewport: any = null;
-    this.pdfFieldService.currentViewport$.subscribe(vp => viewport = vp).unsubscribe();
-    return viewport;
-  }
-
-  private getFieldAtPoint(x: number, y: number): Field | null {
-    const viewport = this.getCurrentViewport();
-    if (!viewport) return null;
-
-    const fieldsOnPage = this.fields
-      .filter(field => field.locations.pageNumber === this.currentPage)
-      .reverse();
-
-    for (const field of fieldsOnPage) {
-      if (this.canvasRenderer.isPointInField(x, y, field, viewport, this.documentType)) {
-        return field;
-      }
-    }
-
-    return null;
-  }
-
-  private updateHoverState(coords: { x: number; y: number }, viewport: any): void {
-    const fieldAtPoint = this.getFieldAtPoint(coords.x, coords.y);
-    if (fieldAtPoint !== this.hoveredField) {
-      this.hoveredField = fieldAtPoint;
-      this.redrawOverlay();
-    }
-  }
-
-  private updateCursor(x: number, y: number, viewport: any): void {
-    const cursor = this.interactionService.getCursorStyle(
-      x,
-      y,
-      this.selectedField,
-      this.hoveredField,
-      viewport,
-      this.documentType
-    );
-    this.drawingCanvas.nativeElement.style.cursor = cursor;
-  }
-
-  private updateCursorAfterOperation(x: number, y: number): void {
-    const viewport = this.getCurrentViewport();
-    if (viewport) {
-      this.updateCursor(x, y, viewport);
-    }
-  }
-
-  // ==================== Public UI Methods ====================
-
-  getRecipientLabel(index: number): string {
-    return this.pdfFieldService.getRecipientTypeName(index);
-  }
-
-  getSelectedFieldType() {
-    return this.fieldTypeService.getFieldTypeByKey(this.selectedFieldType);
-  }
-
-  changeDocumentType(type: AdobeDocumentType): void {
-    this.modal.create({
-      nzTitle: 'Change Document Type - Field Remapping Required',
-      nzContent: `
-        <p><strong>Changing the document type will remap all field coordinates.</strong></p>
-        <p>Adobe Sign uses different coordinate systems:</p>
-        <ul style="margin: 10px 0;">
-          <li><strong>TRANSIENT:</strong> Origin at bottom-left (0,0)</li>
-          <li><strong>LIBRARY:</strong> Origin at top-left (0,0)</li>
-        </ul>
-        <p>All your fields will be automatically repositioned to maintain their visual placement in the new coordinate system. The Y-coordinates will be recalculated.</p>
-        <p style="color: #ff4d4f; margin-top: 10px;">
-          <strong>Note:</strong> This affects the exported JSON values. Please verify field positions after the change.
-        </p>
-      `,
-      nzClosable: true,
-      nzOkText: 'Continue with Remapping',
-      nzOkType: 'primary',
-      nzCancelText: 'Cancel',
-      nzOnOk: () => {
-        this.documentType = type;
-        this.redrawOverlay();
-      },
-      nzWidth: 520,
-      nzMaskClosable: false,
-      nzIconType: 'exclamation-circle'
-    });
-  }
-
-  get fieldsOnCurrentPage(): Field[] {
-    return this.fields.filter(f => f.locations.pageNumber === this.currentPage);
-  }
-
-  selectFieldType(field: FieldTypeCombination): void {
-    this.selectedFieldType = `${field.label}_${field.inputType}_${field.contentType}`.toLowerCase();
-  }
-
-  deleteSelectedField(): void {
-    if (this.selectedField) {
-      this.pdfFieldService.deleteField(this.selectedField.id);
-      this.selectedField = null;
-      this.redrawOverlay();
-    }
-  }
-
-  // ==================== Import/Export/JSON ====================
-
-  exportJson(): void {
-    const fieldsData = {
-      fields: this.fields,
-      documentType: this.documentType,
-      totalPages: this.totalPages,
-      exportDate: new Date().toISOString()
-    };
-
-    const dataStr = JSON.stringify(fieldsData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `fieldforge-config-${Date.now()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    this.message.success('Configuration exported successfully!');
-  }
-
-  importJson(): void {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'application/json';
-    input.onchange = (event: any) => {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e: any) => {
-          try {
-            const config = JSON.parse(e.target.result);
-
-            if (config.fields && Array.isArray(config.fields)) {
-              // Clear existing fields
-              this.fields.forEach(f => this.pdfFieldService.deleteField(f.id));
-
-              // Import new fields
-              config.fields.forEach((field: Field) => {
-                this.pdfFieldService.addField(field);
-              });
-
-              if (config.documentType) {
-                this.documentType = config.documentType;
-              }
-
-              this.redrawOverlay();
-              this.message.success(`Imported ${config.fields.length} fields successfully!`);
-            } else {
-              this.message.error('Invalid configuration file format!');
-            }
-          } catch (error) {
-            this.message.error('Failed to parse JSON file!');
-          }
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
-  }
-
-  showJson(): void {
-    const fieldsData = {
-      fields: this.fields,
-      documentType: this.documentType,
-      totalPages: this.totalPages,
-      currentPage: this.currentPage
-    };
-
-    const jsonString = JSON.stringify(fieldsData, null, 2);
-
-    this.modal.create({
-      nzTitle: 'Field Configuration JSON',
-      nzContent: `<pre style="max-height: 500px; overflow: auto; background: #f5f5f5; padding: 16px; border-radius: 4px;"><code>${this.escapeHtml(jsonString)}</code></pre>`,
-      nzWidth: 800,
-      nzFooter: [
+        documentType,
+        this.fieldTypes.getFieldKind(field),
         {
-          label: 'Copy to Clipboard',
-          type: 'primary',
-          onClick: () => {
-            navigator.clipboard.writeText(jsonString).then(() => {
-              this.message.success('JSON copied to clipboard!');
-            });
-          }
+          selected: field.id === selectedId,
+          hovered: field.id === hoveredId,
+          dimmed: selectedId !== null && field.id !== selectedId,
         },
-        {
-          label: 'Close',
-          onClick: () => true
-        }
-      ]
-    });
-  }
+        // Every field is the signer's today; naming it on each box is noise.
+        field.recipientIndex === 1 ? '' : this.fieldTypes.getRecipientLabel(field.recipientIndex),
+      );
+    }
 
-  // ==================== Child Component Event Handlers ====================
+    const drawing = this.state.drawing();
+    if (drawing) {
+      this.renderer.drawFieldPreview(
+        ctx,
+        drawing.start.x,
+        drawing.start.y,
+        drawing.current.x,
+        drawing.current.y,
+        viewport,
+        documentType,
+      );
+      return;
+    }
 
-  async onToolbarFileSelected(file: File): Promise<void> {
-    if (file && file.type === 'application/pdf') {
-      const arrayBuffer = await file.arrayBuffer();
-      await this.loadPdf(arrayBuffer);
+    // With a field type armed, show where a click would put one.
+    const armedType = this.state.selectedType();
+    const pointer = this.state.pointer();
+    if (armedType && pointer) {
+      const box = this.coords.boxFromClick(
+        pointer,
+        this.fieldTypes.getDefaultSize(armedType.inputType),
+        viewport,
+        documentType,
+      );
+      this.renderer.drawPlacementGhost(ctx, box, viewport, documentType, armedType.kind);
     }
   }
 
-  onToolbarImportClicked(): void {
-    this.importJson();
-  }
+  /** Scroll the workspace so a field with this stored `top` is in view, if it is not already. */
+  private scrollToField(top: number): void {
+    const workspace = this.workspace()?.nativeElement;
+    const overlay = this.overlayCanvas()?.nativeElement;
+    const viewport = this.pdf.viewport();
+    if (!workspace || !overlay || !viewport) return;
 
-  onToolbarExportClicked(): void {
-    this.exportJson();
-  }
+    const canvasY = this.coords.getCanvasPosition(top, viewport, this.state.documentType());
+    const overlayTop =
+      overlay.getBoundingClientRect().top - workspace.getBoundingClientRect().top + workspace.scrollTop;
+    const fieldY = overlayTop + canvasY;
 
-  onToolbarJsonViewClicked(): void {
-    this.showJson();
-  }
-
-  onToolbarPageChanged(page: number): void {
-    this.currentPage = page;
-    this.renderPage(page);
-  }
-
-  onToolbarGridToggled(show: boolean): void {
-    this.showGrid = show;
-    this.redrawOverlay();
-  }
-
-  onToolbarSnapToggled(snap: boolean): void {
-    this.snapToGrid = snap;
-  }
-
-  onToolbarUndoClicked(): void {
-    this.historyService.undo();
-  }
-
-  onToolbarRedoClicked(): void {
-    this.historyService.redo();
-  }
-
-  onToolbarDocumentTypeChanged(type: AdobeDocumentType): void {
-    this.changeDocumentType(type);
-  }
-
-  onToolbarLeftSidebarToggled(collapsed: boolean): void {
-    this.leftSidebarCollapsed = collapsed;
-  }
-
-  onToolbarRightSidebarToggled(collapsed: boolean): void {
-    this.rightSidebarCollapsed = collapsed;
-  }
-
-  onFieldListFieldSelected(field: Field): void {
-    this.selectedField = field;
-    this.redrawOverlay();
-  }
-
-  onFieldPropertyUpdated(updates: Partial<Field>): void {
-    if (this.selectedField) {
-      this.pdfFieldService.updateField(this.selectedField.id, updates);
-      this.redrawOverlay();
+    const visibleFrom = workspace.scrollTop;
+    const visibleTo = workspace.scrollTop + workspace.clientHeight - REVEAL_MARGIN_PX;
+    if (fieldY < visibleFrom + REVEAL_MARGIN_PX / 2 || fieldY > visibleTo) {
+      workspace.scrollTo({ top: Math.max(0, fieldY - REVEAL_MARGIN_PX), behavior: 'smooth' });
     }
   }
 
-  onFieldPropertyDeleted(): void {
-    this.deleteSelectedField();
+  private canvasPoint(event: MouseEvent) {
+    const canvas = this.overlayCanvas()?.nativeElement;
+    return canvas ? this.coords.getCanvasCoordinates(event, canvas) : { x: 0, y: 0 };
   }
+}
 
-  onFieldTypeSidebarFieldTypeSelected(fieldType: FieldTypeCombination): void {
-    this.selectFieldType(fieldType);
-  }
-
-  onFieldTypeSidebarFieldSelected(field: Field): void {
-    this.selectedField = field;
-    this.redrawOverlay();
-  }
-
-  onFieldPropertiesSidebarFieldUpdated(updates: Partial<Field>): void {
-    if (this.selectedField) {
-      this.pdfFieldService.updateField(this.selectedField.id, updates);
-      this.redrawOverlay();
-    }
-  }
-
-  onFieldPropertiesSidebarFieldDeleted(): void {
-    this.deleteSelectedField();
-  }
-
-  private escapeHtml(text: string): string {
-    const map: { [key: string]: string } = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, m => map[m]);
-  }
+/** Keys typed into a form control or a dialog belong to it, not to the canvas. */
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.isContentEditable ||
+    ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
+    target.closest('.cdk-overlay-container') !== null
+  );
 }

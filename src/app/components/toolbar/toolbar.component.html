@@ -1,98 +1,170 @@
-<nz-header class="app-header">
-  <div class="header-content">
-    <!-- Logo/Title -->
-    <div class="app-title">
-      <i nz-icon nzType="file-pdf" nzTheme="twotone"></i>
-      <span>FieldForge</span>
-    </div>
-
-    <!-- Main Actions -->
-    <div class="header-actions">
-      <!-- Sidebar Toggles -->
-      <button nz-button (click)="onLeftSidebarToggle()" nz-tooltip="Toggle Field Types Panel">
-        <i nz-icon [nzType]="leftSidebarCollapsed ? 'menu-unfold' : 'menu-fold'"></i>
-      </button>
-
-      <nz-divider nzType="vertical"></nz-divider>
-
-      <nz-upload [nzBeforeUpload]="beforeUpload" (nzChange)="onFileChange($event)">
-        <button nz-button nzType="primary">
-          <i nz-icon nzType="upload"></i>
-          Upload PDF
-        </button>
-      </nz-upload>
-
-      <nz-divider nzType="vertical"></nz-divider>
-
-      <!-- Import/Export/JSON Actions -->
-      <button nz-button (click)="importClicked.emit()" nz-tooltip="Import Field Configuration">
-        <i nz-icon nzType="download"></i>
-        Import
-      </button>
-
-      <button nz-button (click)="exportClicked.emit()" nz-tooltip="Export Field Configuration">
-        <i nz-icon nzType="upload"></i>
-        Export
-      </button>
-
-      <button nz-button (click)="jsonViewClicked.emit()" nz-tooltip="View JSON Configuration">
-        <i nz-icon nzType="code"></i>
-        View JSON
-      </button>
-
-      <nz-divider nzType="vertical"></nz-divider>
-
-      <!-- Page Navigation -->
-      <nz-space>
-        <button *nzSpaceItem nz-button (click)="onPreviousPage()" [disabled]="currentPage <= 1">
-          <i nz-icon nzType="left"></i>
-        </button>
-        <button *nzSpaceItem nz-button disabled>
-          Page {{ currentPage }} / {{ totalPages }}
-        </button>
-        <button *nzSpaceItem nz-button (click)="onNextPage()" [disabled]="currentPage >= totalPages">
-          <i nz-icon nzType="right"></i>
-        </button>
-      </nz-space>
-
-      <nz-divider nzType="vertical"></nz-divider>
-
-      <!-- Grid & Snap -->
-      <button nz-button [nzType]="showGrid ? 'primary' : 'default'" (click)="onGridToggle()"
-        nz-tooltip="Toggle Grid">
-        <i nz-icon nzType="table"></i>
-      </button>
-
-      <button nz-button [nzType]="snapToGrid ? 'primary' : 'default'" (click)="onSnapToggle()"
-        nz-tooltip="Snap to Grid">
-        <i nz-icon nzType="block"></i>
-      </button>
-
-      <nz-divider nzType="vertical"></nz-divider>
-
-      <!-- Undo/Redo -->
-      <button nz-button (click)="undoClicked.emit()" [disabled]="!canUndo" nz-tooltip="Undo (Ctrl+Z)">
-        <i nz-icon nzType="undo"></i>
-      </button>
-
-      <button nz-button (click)="redoClicked.emit()" [disabled]="!canRedo" nz-tooltip="Redo (Ctrl+Shift+Z)">
-        <i nz-icon nzType="redo"></i>
-      </button>
-
-      <nz-divider nzType="vertical"></nz-divider>
-
-      <!-- Document Type -->
-      <nz-select [ngModel]="documentType" (ngModelChange)="onDocumentTypeChange($event)" style="width: 140px"
-        nz-tooltip="Coordinate System">
-        <nz-option [nzValue]="'TRANSIENT'" nzLabel="Transient"></nz-option>
-        <nz-option [nzValue]="'LIBRARY'" nzLabel="Library"></nz-option>
-      </nz-select>
-
-      <nz-divider nzType="vertical"></nz-divider>
-
-      <button nz-button (click)="onRightSidebarToggle()" nz-tooltip="Toggle Properties Panel">
-        <i nz-icon [nzType]="rightSidebarCollapsed ? 'menu-fold' : 'menu-unfold'"></i>
-      </button>
-    </div>
+<header class="ff-toolbar">
+  <div class="ff-toolbar__brand">
+    <i nz-icon nzType="file-pdf"></i>
+    <span>FieldForge</span>
   </div>
-</nz-header>
+
+  <div class="ff-toolbar__group">
+    <button
+      nz-button
+      (click)="toggleLeftSidebar()"
+      nz-tooltip="Toggle Field Types Panel"
+      aria-label="Toggle field types panel"
+    >
+      <i nz-icon [nzType]="state.leftSidebarCollapsed() ? 'menu-unfold' : 'menu-fold'"></i>
+    </button>
+  </div>
+
+  <div class="ff-toolbar__divider"></div>
+
+  <div class="ff-toolbar__group">
+    <button nz-button nzType="primary" (click)="actions.choosePdf()">
+      <i nz-icon nzType="upload"></i>
+      Upload PDF
+    </button>
+    <button nz-button (click)="actions.importConfig()" nz-tooltip="Import Field Configuration">
+      <i nz-icon nzType="download"></i>
+      Import
+    </button>
+    <button nz-button (click)="actions.exportConfig()" nz-tooltip="Export Field Configuration">
+      <i nz-icon nzType="upload"></i>
+      Export
+    </button>
+    <button
+      nz-button
+      (click)="actions.exportAdobeFormFields()"
+      nz-tooltip="Export the fields in the shape Adobe Sign takes as formFields"
+    >
+      <i nz-icon nzType="export"></i>
+      Adobe JSON
+    </button>
+    <button nz-button (click)="actions.showJson()" nz-tooltip="View JSON Configuration">
+      <i nz-icon nzType="code"></i>
+      View JSON
+    </button>
+  </div>
+
+  <div class="ff-toolbar__divider"></div>
+
+  <div class="ff-toolbar__group">
+    <button
+      nz-button
+      (click)="pdf.setPage(pdf.currentPage() - 1)"
+      [disabled]="pdf.currentPage() <= 1"
+      aria-label="Previous page"
+    >
+      <i nz-icon nzType="left"></i>
+    </button>
+    <span class="ff-toolbar__status" role="status">Page {{ pdf.currentPage() }} / {{ pdf.totalPages() }}</span>
+    <button
+      nz-button
+      (click)="pdf.setPage(pdf.currentPage() + 1)"
+      [disabled]="pdf.currentPage() >= pdf.totalPages()"
+      aria-label="Next page"
+    >
+      <i nz-icon nzType="right"></i>
+    </button>
+  </div>
+
+  <div class="ff-toolbar__divider"></div>
+
+  <div class="ff-toolbar__group">
+    <button
+      nz-button
+      [nzType]="state.showGrid() ? 'primary' : 'default'"
+      (click)="toggleGrid()"
+      nz-tooltip="Toggle Grid"
+      aria-label="Toggle grid"
+      [attr.aria-pressed]="state.showGrid()"
+    >
+      <i nz-icon nzType="table"></i>
+    </button>
+    <button
+      nz-button
+      [nzType]="state.snapToGrid() ? 'primary' : 'default'"
+      (click)="toggleSnap()"
+      nz-tooltip="Snap to Grid"
+      aria-label="Snap to grid"
+      [attr.aria-pressed]="state.snapToGrid()"
+    >
+      <i nz-icon nzType="block"></i>
+    </button>
+  </div>
+
+  <div class="ff-toolbar__divider"></div>
+
+  <div class="ff-toolbar__group">
+    <button
+      nz-button
+      (click)="pdf.zoomOut()"
+      [disabled]="!pdf.document()"
+      nz-tooltip="Zoom out (-)"
+      aria-label="Zoom out"
+    >
+      <i nz-icon nzType="zoom-out"></i>
+    </button>
+    <nz-select
+      class="ff-toolbar__zoom"
+      [ngModel]="zoomValue()"
+      (ngModelChange)="onZoomSelect($event)"
+      [nzDisabled]="!pdf.document()"
+      aria-label="Zoom"
+    >
+      <nz-option nzValue="fit" nzLabel="Fit width"></nz-option>
+      @for (step of zoomSteps; track step) {
+        <nz-option [nzValue]="step" [nzLabel]="step * 100 + '%'"></nz-option>
+      }
+    </nz-select>
+    <button nz-button (click)="pdf.zoomIn()" [disabled]="!pdf.document()" nz-tooltip="Zoom in (+)" aria-label="Zoom in">
+      <i nz-icon nzType="zoom-in"></i>
+    </button>
+  </div>
+
+  <div class="ff-toolbar__divider"></div>
+
+  <div class="ff-toolbar__group">
+    <button
+      nz-button
+      (click)="editor.undo()"
+      [disabled]="!history.canUndo()"
+      nz-tooltip="Undo (Ctrl+Z)"
+      aria-label="Undo"
+    >
+      <i nz-icon nzType="undo"></i>
+    </button>
+    <button
+      nz-button
+      (click)="editor.redo()"
+      [disabled]="!history.canRedo()"
+      nz-tooltip="Redo (Ctrl+Shift+Z or Ctrl+Y)"
+      aria-label="Redo"
+    >
+      <i nz-icon nzType="redo"></i>
+    </button>
+  </div>
+
+  <div class="ff-toolbar__divider"></div>
+
+  <div class="ff-toolbar__group">
+    <nz-select
+      #documentTypeModel="ngModel"
+      [ngModel]="state.documentType()"
+      (ngModelChange)="actions.requestDocumentType($event)"
+      class="ff-toolbar__select"
+      nz-tooltip="Coordinate System"
+      aria-label="Coordinate system"
+    >
+      <nz-option [nzValue]="DocumentType.TRANSIENT" nzLabel="Transient"></nz-option>
+      <nz-option [nzValue]="DocumentType.LIBRARY" nzLabel="Library"></nz-option>
+    </nz-select>
+
+    <button
+      nz-button
+      (click)="toggleRightSidebar()"
+      nz-tooltip="Toggle Properties Panel"
+      aria-label="Toggle properties panel"
+    >
+      <i nz-icon [nzType]="state.rightSidebarCollapsed() ? 'menu-fold' : 'menu-unfold'"></i>
+    </button>
+  </div>
+</header>

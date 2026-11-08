@@ -1,40 +1,47 @@
-<div class="sidebar-content">
-  <div class="sidebar-header">
-    <h3>Field Types</h3>
+<aside class="ff-panel ff-panel--left" aria-label="Tools">
+  <div class="ff-panel__header">
+    <h2 class="ff-panel__title">Tools</h2>
   </div>
 
-  <!-- Search Field Types -->
-  <div class="search-container">
-    <nz-input-wrapper>
-      <input type="text" nz-input placeholder="Search field types..." [(ngModel)]="searchFieldType">
-      <i nz-icon nzType="search" nz-input-prefix></i>
-    </nz-input-wrapper>
-  </div>
-
-  <!-- Field Type Cards -->
-  <div class="field-types-container">
-    <div *ngFor="let group of filteredFieldTypeGroups" class="field-type-group">
-      <div class="group-label">{{ group.label }}</div>
-      <div class="field-type-grid">
-        <nz-card *ngFor="let field of group.items" class="field-type-card"
-          [class.selected]="isFieldTypeSelected(field)"
-          (click)="onFieldTypeClick(field)" [nzBodyStyle]="{'padding': '12px'}" nzHoverable>
-          <div class="field-type-content">
-            <i nz-icon [nzType]="field.icon" [style.color]="field.color" [style.fontSize]="'24px'"></i>
-            <div class="field-type-info">
-              <div class="field-type-label">{{ field.label }}</div>
-            </div>
-          </div>
-        </nz-card>
+  <div class="ff-panel__body">
+    <section class="ff-section">
+      <div class="ff-stack">
+        <button
+          type="button"
+          class="ff-option ff-option--compact"
+          [class.is-selected]="!state.armed()"
+          [attr.aria-pressed]="!state.armed()"
+          (click)="selectTool()"
+        >
+          <i class="ff-option__icon" nz-icon nzType="select"></i>
+          <span class="ff-option__label">Select</span>
+          <kbd class="ff-option__shortcut">V</kbd>
+        </button>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- Field List -->
-  <app-field-list
-    [fields]="fields"
-    [selectedFieldId]="selectedFieldId"
-    [currentPage]="currentPage"
-    (fieldSelected)="onFieldClick($event)">
-  </app-field-list>
-</div>
+    @for (group of groups; track group.label) {
+      <section class="ff-section">
+        <h3 class="ff-section__label">{{ group.label }}</h3>
+        <div class="ff-stack">
+          @for (preset of group.items; track fieldTypeService.keyOf(preset)) {
+            <button
+              type="button"
+              class="ff-option ff-option--compact ff-kind-{{ preset.kind }}"
+              [class.is-selected]="isSelected(preset)"
+              [attr.aria-pressed]="isSelected(preset)"
+              [attr.aria-keyshortcuts]="preset.shortcut"
+              (click)="selectFieldType(preset)"
+            >
+              <i class="ff-option__icon" nz-icon [nzType]="preset.icon"></i>
+              <span class="ff-option__label">{{ preset.label }}</span>
+              @if (preset.shortcut) {
+                <kbd class="ff-option__shortcut">{{ preset.shortcut }}</kbd>
+              }
+            </button>
+          }
+        </div>
+      </section>
+    }
+  </div>
+</aside>

@@ -1,25 +1,21 @@
-<div class="sidebar-content">
-  <div class="sidebar-header">
-    <h3>Properties</h3>
+<aside class="ff-panel ff-panel--right" aria-label="Inspector">
+  <div class="ff-panel__header">
+    <h2 class="ff-panel__title">Inspector</h2>
   </div>
 
-  <!-- Selected Field Properties -->
-  @if(selectedField){
-  <div class="properties-panel">
-    <app-field-property-form
-      [field]="selectedField"
-      (fieldUpdated)="onFieldUpdated($event)"
-      (deleteClicked)="onFieldDeleted()">
-    </app-field-property-form>
-  </div>
-  }
+  <div class="ff-panel__body">
+    @if (state.selectedField(); as field) {
+      <section class="ff-section">
+        <h3 class="ff-section__label">Properties</h3>
+        <app-field-property-form
+          [field]="field"
+          (fieldUpdated)="editor.updateSelected($event)"
+          (deleteClicked)="editor.deleteSelected()"
+        >
+        </app-field-property-form>
+      </section>
+    }
 
-  <!-- No Selection State -->
-  <div *ngIf="!selectedField" class="no-selection">
-    <nz-empty nzNotFoundContent="No field selected" [nzNotFoundImage]="'simple'">
-      <ng-template #desc>
-        <p>Select a field to view and edit its properties</p>
-      </ng-template>
-    </nz-empty>
+    <app-field-list></app-field-list>
   </div>
-</div>
+</aside>

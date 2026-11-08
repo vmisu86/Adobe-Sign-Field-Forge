@@ -1,5 +1,4 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { computed, Injectable, signal } from '@angular/core';
 import { Field } from '../models/field.model';
 
 /**
@@ -18,7 +17,7 @@ export class AddFieldCommand implements Command {
   constructor(
     private field: Field,
     private executeCallback: (field: Field) => void,
-    private undoCallback: (fieldId: string) => void
+    private undoCallback: (fieldId: string) => void,
   ) {}
 
   execute(): void {
@@ -41,7 +40,7 @@ export class DeleteFieldCommand implements Command {
   constructor(
     private field: Field,
     private executeCallback: (fieldId: string) => void,
-    private undoCallback: (field: Field) => void
+    private undoCallback: (field: Field) => void,
   ) {}
 
   execute(): void {
@@ -64,7 +63,7 @@ export class UpdateFieldCommand implements Command {
   constructor(
     private oldField: Field,
     private newField: Field,
-    private executeCallback: (field: Field) => void
+    private executeCallback: (field: Field) => void,
   ) {}
 
   execute(): void {
@@ -90,7 +89,7 @@ export class MoveFieldCommand implements Command {
     private oldTop: number,
     private newLeft: number,
     private newTop: number,
-    private executeCallback: (fieldId: string, left: number, top: number) => void
+    private executeCallback: (fieldId: string, left: number, top: number) => void,
   ) {}
 
   execute(): void {
@@ -120,7 +119,7 @@ export class ResizeFieldCommand implements Command {
     private newTop: number,
     private newWidth: number,
     private newHeight: number,
-    private executeCallback: (fieldId: string, left: number, top: number, width: number, height: number) => void
+    private executeCallback: (fieldId: string, left: number, top: number, width: number, height: number) => void,
   ) {}
 
   execute(): void {
@@ -137,33 +136,53 @@ export class ResizeFieldCommand implements Command {
 }
 
 /**
+ * Command to replace the whole set of fields at once (import), so one undo reverts it.
+ */
+export class ReplaceFieldsCommand implements Command {
+  constructor(
+    private before: Field[],
+    private after: Field[],
+    private applyCallback: (fields: Field[]) => void,
+  ) {}
+
+  execute(): void {
+    this.applyCallback(this.after);
+  }
+
+  undo(): void {
+    this.applyCallback(this.before);
+  }
+
+  getDescription(): string {
+    return `Replace ${this.before.length} fields with ${this.after.length}`;
+  }
+}
+
+/**
  * History service to manage undo/redo operations
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class HistoryService {
   private undoStack: Command[] = [];
   private redoStack: Command[] = [];
-  private maxHistorySize = 50;
+  private readonly maxHistorySize = 50;
 
-  private canUndoSubject = new BehaviorSubject<boolean>(false);
-  private canRedoSubject = new BehaviorSubject<boolean>(false);
+  private readonly undoCount = signal(0);
+  private readonly redoCount = signal(0);
 
-  canUndo$: Observable<boolean> = this.canUndoSubject.asObservable();
-  canRedo$: Observable<boolean> = this.canRedoSubject.asObservable();
+  readonly canUndo = computed(() => this.undoCount() > 0);
+  readonly canRedo = computed(() => this.redoCount() > 0);
 
-  /**
-   * Execute a command and add it to history
-   */
+  /** Execute a command and add it to history. */
   executeCommand(command: Command): void {
     command.execute();
     this.undoStack.push(command);
 
-    // Clear redo stack when new command is executed
+    // A new command invalidates everything that was undone.
     this.redoStack = [];
 
-    // Limit history size
     if (this.undoStack.length > this.maxHistorySize) {
       this.undoStack.shift();
     }
@@ -171,72 +190,50 @@ export class HistoryService {
     this.updateState();
   }
 
-  /**
-   * Undo the last command
-   */
+  /** Undo the last command. */
   undo(): void {
-    if (this.undoStack.length === 0) return;
+    const command = this.undoStack.pop();
+    if (!command) return;
 
-    const command = this.undoStack.pop()!;
     command.undo();
     this.redoStack.push(command);
-
     this.updateState();
   }
 
-  /**
-   * Redo the last undone command
-   */
+  /** Redo the last undone command. */
   redo(): void {
-    if (this.redoStack.length === 0) return;
+    const command = this.redoStack.pop();
+    if (!command) return;
 
-    const command = this.redoStack.pop()!;
     command.execute();
     this.undoStack.push(command);
-
     this.updateState();
   }
 
-  /**
-   * Clear all history
-   */
+  /** Clear all history. */
   clear(): void {
     this.undoStack = [];
     this.redoStack = [];
     this.updateState();
   }
 
-  /**
-   * Get undo stack description
-   */
   getUndoDescription(): string | null {
-    if (this.undoStack.length === 0) return null;
-    return this.undoStack[this.undoStack.length - 1].getDescription();
+    return this.undoStack.at(-1)?.getDescription() ?? null;
   }
 
-  /**
-   * Get redo stack description
-   */
   getRedoDescription(): string | null {
-    if (this.redoStack.length === 0) return null;
-    return this.redoStack[this.redoStack.length - 1].getDescription();
+    return this.redoStack.at(-1)?.getDescription() ?? null;
   }
 
-  /**
-   * Update can undo/redo observables
-   */
-  private updateState(): void {
-    this.canUndoSubject.next(this.undoStack.length > 0);
-    this.canRedoSubject.next(this.redoStack.length > 0);
-  }
-
-  /**
-   * Get history size
-   */
   getHistorySize(): { undo: number; redo: number } {
     return {
       undo: this.undoStack.length,
-      redo: this.redoStack.length
+      redo: this.redoStack.length,
     };
+  }
+
+  private updateState(): void {
+    this.undoCount.set(this.undoStack.length);
+    this.redoCount.set(this.redoStack.length);
   }
 }

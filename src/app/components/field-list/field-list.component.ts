@@ -1,40 +1,50 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { NzListModule } from 'ng-zorro-antd/list';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzInputModule } from 'ng-zorro-antd/input';
 import { Field } from '../../models/field.model';
+import { EditorStateService } from '../../services/editor-state.service';
+import { FieldEditorService } from '../../services/field-editor.service';
 import { FieldTypeService } from '../../services/field-type.service';
+import { PdfFieldService } from '../../services/pdf-field.service';
 
+interface PageGroup {
+  page: number;
+  fields: Field[];
+}
+
+/** Below this many fields the filter box only gets in the way. */
+const FILTER_THRESHOLD = 8;
+
+/**
+ * Every field in the document, grouped by page. It is the keyboard and screen-reader way to find a
+ * field: picking one selects it, goes to its page and scrolls it into view.
+ */
 @Component({
   selector: 'app-field-list',
   standalone: true,
-  imports: [
-    CommonModule,
-    NzListModule,
-    NzIconModule,
-    NzTagModule
-  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule, NzIconModule, NzInputModule],
   templateUrl: './field-list.component.html',
-  styleUrls: ['./field-list.component.less']
 })
 export class FieldListComponent {
-  @Input() fields: Field[] = [];
-  @Input() selectedFieldId: string | null = null;
-  @Input() currentPage = 1;
-  @Output() fieldSelected = new EventEmitter<Field>();
+  protected readonly fieldTypeService = inject(FieldTypeService);
+  protected readonly state = inject(EditorStateService);
+  protected readonly editor = inject(FieldEditorService);
+  private readonly fields = inject(PdfFieldService);
 
-  constructor(public fieldTypeService: FieldTypeService) {}
+  protected readonly filter = signal('');
+  protected readonly total = computed(() => this.fields.fields().length);
+  protected readonly showFilter = computed(() => this.total() >= FILTER_THRESHOLD);
 
-  get fieldsOnCurrentPage(): Field[] {
-    return this.fields.filter(f => f.locations.pageNumber === this.currentPage);
-  }
-
-  onFieldClick(field: Field): void {
-    this.fieldSelected.emit(field);
-  }
-
-  isSelected(field: Field): boolean {
-    return this.selectedFieldId === field.id;
-  }
+  protected readonly groups = computed<PageGroup[]>(() => {
+    const wanted = this.showFilter() ? this.filter().trim().toLowerCase() : '';
+    const byPage = new Map<number, Field[]>();
+    for (const field of this.fields.fields()) {
+      if (wanted && !field.name.toLowerCase().includes(wanted)) continue;
+      const page = field.locations.pageNumber;
+      byPage.set(page, [...(byPage.get(page) ?? []), field]);
+    }
+    return [...byPage.entries()].sort(([a], [b]) => a - b).map(([page, fields]) => ({ page, fields }));
+  });
 }

@@ -1,95 +1,63 @@
-<nz-layout class="app-layout">
-  <!-- Top Header/Toolbar -->
-  <app-toolbar
-    [canUndo]="canUndo"
-    [canRedo]="canRedo"
-    [currentPage]="currentPage"
-    [totalPages]="totalPages"
-    [showGrid]="showGrid"
-    [snapToGrid]="snapToGrid"
-    [documentType]="documentType"
-    [leftSidebarCollapsed]="leftSidebarCollapsed"
-    [rightSidebarCollapsed]="rightSidebarCollapsed"
-    (fileSelected)="onToolbarFileSelected($event)"
-    (importClicked)="onToolbarImportClicked()"
-    (exportClicked)="onToolbarExportClicked()"
-    (jsonViewClicked)="onToolbarJsonViewClicked()"
-    (pageChanged)="onToolbarPageChanged($event)"
-    (gridToggled)="onToolbarGridToggled($event)"
-    (snapToggled)="onToolbarSnapToggled($event)"
-    (undoClicked)="onToolbarUndoClicked()"
-    (redoClicked)="onToolbarRedoClicked()"
-    (documentTypeChanged)="onToolbarDocumentTypeChanged($event)"
-    (leftSidebarToggled)="onToolbarLeftSidebarToggled($event)"
-    (rightSidebarToggled)="onToolbarRightSidebarToggled($event)">
-  </app-toolbar>
+<div class="ff-app">
+  <app-toolbar></app-toolbar>
 
-  <!-- Field Type Indicator Banner -->
-  @if (selectedFieldType && (getSelectedFieldType())){
-  <nz-alert nzType="info" nzBanner
-    [nzMessage]="'✏️ Selected: ' + getSelectedFieldType()?.label + ' - Click on empty canvas to draw, click on fields to select'"
-    nzCloseable (nzOnClose)="selectedFieldType = ''">
-  </nz-alert>
-  }
-
-  <nz-layout>
-    <!-- Left Sidebar - Field Types & List -->
-    @if(!leftSidebarCollapsed){
-    <nz-sider [nzWidth]="280" nzTheme="light" class="left-sidebar">
-      <app-field-type-sidebar
-        [fieldTypeGroups]="fieldTypeGroups"
-        [selectedFieldType]="selectedFieldType"
-        [fields]="fields"
-        [currentPage]="currentPage"
-        [selectedFieldId]="selectedField?.id || null"
-        (fieldTypeSelected)="onFieldTypeSidebarFieldTypeSelected($event)"
-        (fieldSelected)="onFieldTypeSidebarFieldSelected($event)">
-      </app-field-type-sidebar>
-    </nz-sider>
+  <div class="ff-app__body">
+    @if (!state.leftSidebarCollapsed()) {
+      <app-field-type-sidebar></app-field-type-sidebar>
     }
-    <!-- Main Content Area -->
-    <nz-layout>
-      <nz-content class="main-content">
-        <!-- Empty State when no PDF -->
-        @if(!pdfDocument){
-        <div class="empty-state">
-          <nz-empty [nzNotFoundImage]="'https://gw.alipayobjects.com/zos/antfincdn/ZHrcdLPrvN/empty.svg'"
-            [nzNotFoundContent]="contentTpl">
-            <ng-template #contentTpl>
-              <h2>Welcome to FieldForge</h2>
-              <p>Upload a PDF document to start adding form fields</p>
-              <nz-upload [nzBeforeUpload]="beforeUpload" (nzChange)="onFileSelected($event)">
-                <button nz-button nzType="primary" nzSize="large">
-                  <i nz-icon nzType="upload"></i>
-                  Upload PDF Document
-                </button>
-              </nz-upload>
-            </ng-template>
-          </nz-empty>
-        </div>
-        }
-        <!-- PDF Canvas -->
-        @if(pdfDocument){
-        <div class="pdf-canvas-container">
-          <canvas #pdfCanvas class="pdf-canvas"></canvas>
-          <canvas #drawingCanvas class="drawing-canvas"
-            [class.drawing-mode]="selectedFieldType && getSelectedFieldType()" (mousedown)="onMouseDown($event)"
-            (mousemove)="onMouseMove($event)" (mouseup)="onMouseUp($event)">
-          </canvas>
-        </div>
-        }
-      </nz-content>
-    </nz-layout>
 
-    <!-- Right Sidebar - Properties -->
-    @if(!rightSidebarCollapsed){
-    <nz-sider [nzWidth]="320" nzTheme="light" class="right-sidebar">
-      <app-field-properties-sidebar
-        [selectedField]="selectedField"
-        (fieldUpdated)="onFieldPropertiesSidebarFieldUpdated($event)"
-        (fieldDeleted)="onFieldPropertiesSidebarFieldDeleted()">
-      </app-field-properties-sidebar>
-    </nz-sider>
+    <div class="ff-stage">
+      <main #workspace class="ff-workspace" (wheel)="onWheel($event)">
+        @if (pdf.document()) {
+          <div class="ff-page">
+            <div class="ff-page__sheet">
+              <canvas #pdfCanvas class="ff-page__pdf"></canvas>
+              <canvas
+                #drawingCanvas
+                class="ff-page__overlay"
+                [class.is-drawing]="state.armed()"
+                [style.cursor]="state.cursor()"
+                aria-label="PDF page. Use the field list to select fields with the keyboard."
+                (mousedown)="onMouseDown($event)"
+                (mousemove)="onMouseMove($event)"
+                (mouseleave)="onMouseLeave()"
+              ></canvas>
+            </div>
+          </div>
+        } @else {
+          <div class="ff-empty">
+            <h2 class="ff-empty__title">Welcome to FieldForge</h2>
+            <p class="ff-empty__text">Upload a PDF document to start adding form fields</p>
+            <button nz-button nzType="primary" nzSize="large" (click)="actions.choosePdf()">
+              <i nz-icon nzType="upload"></i>
+              Upload PDF Document
+            </button>
+          </div>
+        }
+      </main>
+
+      <!-- The drawing tool, floating over the page: what is armed, how to keep it, how to leave it -->
+      @if (pdf.document() && state.selectedType(); as armedType) {
+        <div class="ff-toolchip ff-kind-{{ armedType.kind }}" role="status">
+          <i class="ff-toolchip__icon" nz-icon [nzType]="armedType.icon"></i>
+          <span class="ff-toolchip__label">
+            Drawing <strong>{{ armedType.label }}</strong>
+          </span>
+          <label class="ff-check">
+            <input type="checkbox" [checked]="state.keepDrawing()" (change)="setKeepDrawing($event)" />
+            Keep drawing
+          </label>
+          <button type="button" class="ff-toolchip__done" (click)="stopDrawing()">
+            Done <kbd class="ff-kbd">Esc</kbd>
+          </button>
+        </div>
+      }
+    </div>
+
+    @if (!state.rightSidebarCollapsed()) {
+      <app-field-properties-sidebar></app-field-properties-sidebar>
     }
-  </nz-layout>
-</nz-layout>
+  </div>
+
+  <app-status-bar></app-status-bar>
+</div>

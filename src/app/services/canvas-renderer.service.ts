@@ -1,41 +1,50 @@
-import { Injectable } from '@angular/core';
-import { AdobeDocumentType, Field } from '../models/field.model';
+import { inject, Injectable } from '@angular/core';
+import { AdobeDocumentType, Field, FieldKind } from '../models/field.model';
+import { ViewportGeometry } from '../models/pdf.types';
 import { CoordinateConversionService } from './coordinate-conversion.service';
+import { ThemeService } from './theme.service';
 
+/** How a field is shown right now. */
+export interface FieldPaintState {
+  selected: boolean;
+  hovered: boolean;
+  /** Something else is selected: push this field back so the selection stands out. */
+  dimmed: boolean;
+}
+
+const HANDLE_SIZE = 8;
+const FILL_OPACITY = 0.12;
+const DIMMED_OPACITY = 0.55;
+const GRID_STEP_POINTS = 50;
+
+/** Draws on the overlay canvas. All colours and fonts come from the design tokens through ThemeService. */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CanvasRendererService {
-  constructor(private coordService: CoordinateConversionService) {}
+  private readonly coordService = inject(CoordinateConversionService);
+  private readonly theme = inject(ThemeService);
 
-  /**
-   * Clear the entire canvas
-   */
+  /** Clear the entire canvas */
   clearCanvas(canvas: HTMLCanvasElement): void {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  /**
-   * Draw grid overlay on canvas
-   */
-  drawGrid(
-    ctx: CanvasRenderingContext2D,
-    viewport: any,
-    documentType: AdobeDocumentType
-  ): void {
+  /** Draw grid overlay on canvas */
+  drawGrid(ctx: CanvasRenderingContext2D, viewport: ViewportGeometry, documentType: AdobeDocumentType): void {
+    const theme = this.theme.canvas();
     ctx.save();
-    ctx.strokeStyle = '#e0e0e0';
-    ctx.lineWidth = 0.5;
-    ctx.font = '10px Arial';
-    ctx.fillStyle = '#999';
+    ctx.strokeStyle = theme.border;
+    ctx.lineWidth = 1;
+    ctx.font = `11px ${theme.fontSans}`;
+    ctx.fillStyle = theme.textMuted;
 
     const pageWidthInPoints = viewport.width / viewport.scale;
     const pageHeightInPoints = viewport.height / viewport.scale;
 
-    // Draw vertical grid lines
-    for (let pointX = 0; pointX <= pageWidthInPoints; pointX += 50) {
+    for (let pointX = 0; pointX <= pageWidthInPoints; pointX += GRID_STEP_POINTS) {
       const pixelX = pointX * viewport.scale;
       ctx.beginPath();
       ctx.moveTo(pixelX, 0);
@@ -44,44 +53,31 @@ export class CanvasRendererService {
       ctx.fillText(pointX.toString(), pixelX + 2, 12);
     }
 
-    // Draw horizontal grid lines
-    for (let pointY = 0; pointY <= pageHeightInPoints; pointY += 50) {
+    for (let pointY = 0; pointY <= pageHeightInPoints; pointY += GRID_STEP_POINTS) {
       const pixelY = pointY * viewport.scale;
       ctx.beginPath();
       ctx.moveTo(0, pixelY);
       ctx.lineTo(viewport.width, pixelY);
       ctx.stroke();
 
-      const displayY = documentType === AdobeDocumentType.LIBRARY
-        ? Math.round(pointY)
-        : Math.round(pageHeightInPoints - pointY);
-
+      // The number printed is the `top` a field would have at this line, so it follows the document type.
+      const displayY =
+        documentType === AdobeDocumentType.LIBRARY ? Math.round(pointY) : Math.round(pageHeightInPoints - pointY);
       ctx.fillText(displayY.toString(), 2, pixelY - 2);
     }
 
-    // Draw page dimensions
-    ctx.fillStyle = '#666';
-    ctx.font = '12px Arial';
     ctx.fillText(
       `Page: ${pageWidthInPoints.toFixed(0)} × ${pageHeightInPoints.toFixed(0)} points`,
       10,
-      viewport.height - 10
+      viewport.height - 10,
     );
 
     ctx.restore();
   }
 
-  /**
-   * Draw selection handles around a field
-   */
-  drawSelectionHandles(
-    ctx: CanvasRenderingContext2D,
-    left: number,
-    top: number,
-    width: number,
-    height: number
-  ): void {
-    const handleSize = 8;
+  /** Draw the eight resize handles around a box */
+  drawSelectionHandles(ctx: CanvasRenderingContext2D, left: number, top: number, width: number, height: number): void {
+    const theme = this.theme.canvas();
     const handles = [
       { x: left, y: top },
       { x: left + width, y: top },
@@ -93,124 +89,153 @@ export class CanvasRendererService {
       { x: left + width, y: top + height / 2 },
     ];
 
-    ctx.fillStyle = '#1890ff';
-    ctx.strokeStyle = '#fff';
+    ctx.save();
+    ctx.fillStyle = theme.surface;
+    ctx.strokeStyle = theme.accent;
     ctx.lineWidth = 2;
-
-    handles.forEach(handle => {
-      ctx.fillRect(handle.x - handleSize / 2, handle.y - handleSize / 2, handleSize, handleSize);
-      ctx.strokeRect(handle.x - handleSize / 2, handle.y - handleSize / 2, handleSize, handleSize);
-    });
+    for (const handle of handles) {
+      ctx.fillRect(handle.x - HANDLE_SIZE / 2, handle.y - HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE);
+      ctx.strokeRect(handle.x - HANDLE_SIZE / 2, handle.y - HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE);
+    }
+    ctx.restore();
   }
 
   /**
-   * Draw a single field on the canvas
+   * Draw one field: a tinted box in its kind's colour, its name, and (when selected) an accent outline,
+   * handles and its coordinates. `recipientLabel` is drawn under the name when it is not empty.
    */
   drawField(
     ctx: CanvasRenderingContext2D,
     field: Field,
-    viewport: any,
+    viewport: ViewportGeometry,
     documentType: AdobeDocumentType,
-    color: string,
-    isSelected: boolean,
-    isHovered: boolean,
-    recipientLabel: string
+    kind: FieldKind,
+    state: FieldPaintState,
+    recipientLabel: string,
   ): void {
+    const theme = this.theme.canvas();
+    const color = theme.kinds[kind];
     const left = field.locations.left * viewport.scale;
     const width = field.locations.width * viewport.scale;
     const height = field.locations.height * viewport.scale;
     const top = this.coordService.getCanvasPosition(field.locations.top, viewport, documentType);
+    const opacity = state.dimmed ? DIMMED_OPACITY : 1;
 
-    // Draw field background and border
-    ctx.strokeStyle = isSelected ? '#1890ff' : (isHovered ? '#40a9ff' : color);
-    ctx.fillStyle = (isSelected ? '#1890ff' : (isHovered ? '#40a9ff' : color)) + '33';
-    ctx.lineWidth = isSelected ? 3 : (isHovered ? 2.5 : 2);
+    ctx.save();
 
+    ctx.globalAlpha = opacity * FILL_OPACITY;
+    ctx.fillStyle = color;
     ctx.fillRect(left, top, width, height);
+
+    ctx.globalAlpha = opacity;
+    ctx.strokeStyle = state.selected ? theme.accent : color;
+    ctx.lineWidth = state.selected || state.hovered ? 2 : 1.5;
     ctx.strokeRect(left, top, width, height);
 
-    // Draw selection handles if selected
-    if (isSelected) {
-      this.drawSelectionHandles(ctx, left, top, width, height);
-    }
-
-    // Draw field name
+    // Text stays inside the box, however small it is.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(left, top, width, height);
+    ctx.clip();
     ctx.fillStyle = color;
-    ctx.font = '11px Arial';
-    ctx.fillText(field.name, left + 3, top + 12);
-
-    // Draw recipient label
-    ctx.fillText(recipientLabel, left + 3, top + 24);
-
-    // Draw coordinates
-    ctx.font = '9px Arial';
-    ctx.fillStyle = '#666';
-    ctx.fillText(
-      `(${field.locations.left?.toFixed?.(0) || 0}, ${field.locations.top?.toFixed?.(0) || 0})`,
-      left + 3,
-      top + height - 3
-    );
-
-    // Draw required indicator
-    if (field.required) {
-      ctx.fillStyle = '#ff0000';
-      ctx.fillText('*', left + width - 10, top + 12);
+    ctx.font = `600 12px ${theme.fontSans}`;
+    ctx.fillText(field.name, left + 4, top + 14);
+    if (recipientLabel) {
+      ctx.font = `11px ${theme.fontSans}`;
+      ctx.fillText(recipientLabel, left + 4, top + 27);
     }
+    if (field.required) {
+      ctx.fillStyle = theme.danger;
+      ctx.font = `700 14px ${theme.fontSans}`;
+      ctx.fillText('*', left + width - 12, top + 14);
+    }
+    ctx.restore();
+
+    if (state.selected) {
+      this.drawSelectionHandles(ctx, left, top, width, height);
+      ctx.font = `11px ${theme.fontMono}`;
+      ctx.fillStyle = theme.textMuted;
+      const coordinates = `(${Math.round(field.locations.left)}, ${Math.round(field.locations.top)})`;
+      ctx.fillText(coordinates, left, top + height + 16);
+    }
+
+    ctx.restore();
   }
 
   /**
-   * Draw preview of field being created
+   * Draw where a click would put a default-size field, as a faint dashed box in the kind's colour.
+   * `box` is in stored space (points, `top` as the document type measures it).
    */
+  drawPlacementGhost(
+    ctx: CanvasRenderingContext2D,
+    box: { left: number; top: number; width: number; height: number },
+    viewport: ViewportGeometry,
+    documentType: AdobeDocumentType,
+    kind: FieldKind,
+  ): void {
+    const color = this.theme.canvas().kinds[kind];
+    const left = box.left * viewport.scale;
+    const top = this.coordService.getCanvasPosition(box.top, viewport, documentType);
+    const width = box.width * viewport.scale;
+    const height = box.height * viewport.scale;
+
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = color;
+    ctx.fillRect(left, top, width, height);
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(left, top, width, height);
+    ctx.restore();
+  }
+
+  /** Draw the dashed rectangle and its numbers while a field is being dragged out */
   drawFieldPreview(
     ctx: CanvasRenderingContext2D,
     startX: number,
     startY: number,
     currentX: number,
     currentY: number,
-    viewport: any,
-    documentType: AdobeDocumentType
+    viewport: ViewportGeometry,
+    documentType: AdobeDocumentType,
   ): void {
-    // Draw preview rectangle
-    ctx.strokeStyle = '#1890ff';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.strokeRect(
-      startX,
-      startY,
-      currentX - startX,
-      currentY - startY
-    );
-
-    // Calculate and display coordinates
+    const theme = this.theme.canvas();
     const pixelLeft = Math.min(startX, currentX);
     const pixelTop = Math.min(startY, currentY);
     const pixelWidth = Math.abs(currentX - startX);
     const pixelHeight = Math.abs(currentY - startY);
 
+    ctx.save();
+    ctx.strokeStyle = theme.accent;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(startX, startY, currentX - startX, currentY - startY);
+    ctx.setLineDash([]);
+
     const pointsLeft = this.coordService.pixelsToPoints(pixelLeft, viewport.scale);
-    const pointsTop = this.coordService.convertYCoordinate(pixelTop, pixelHeight, viewport, documentType);
+    const pointsTop = this.coordService.convertYCoordinate(pixelTop, viewport, documentType);
     const pointsWidth = this.coordService.pixelsToPoints(pixelWidth, viewport.scale);
     const pointsHeight = this.coordService.pixelsToPoints(pixelHeight, viewport.scale);
 
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#000000';
-    ctx.font = '12px Arial';
+    ctx.fillStyle = theme.text;
+    ctx.font = `12px ${theme.fontMono}`;
     ctx.fillText(
       `L: ${pointsLeft.toFixed(1)}, T: ${pointsTop.toFixed(1)}, W: ${pointsWidth.toFixed(1)}, H: ${pointsHeight.toFixed(1)}`,
       pixelLeft,
-      pixelTop - 5
+      pixelTop - 6,
     );
+    ctx.restore();
   }
 
-  /**
-   * Check if a point is inside a field's bounds
-   */
+  /** Check if a point is inside a field's bounds */
   isPointInField(
     x: number,
     y: number,
     field: Field,
-    viewport: any,
-    documentType: AdobeDocumentType
+    viewport: ViewportGeometry,
+    documentType: AdobeDocumentType,
   ): boolean {
     const left = field.locations.left * viewport.scale;
     const width = field.locations.width * viewport.scale;

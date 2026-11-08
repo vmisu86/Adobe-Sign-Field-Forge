@@ -1,105 +1,75 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, untracked, viewChild } from '@angular/core';
+import { FormsModule, NgModel } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzUploadModule } from 'ng-zorro-antd/upload';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzSelectModule } from 'ng-zorro-antd/select';
-import { NzSpaceModule } from 'ng-zorro-antd/space';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
-import { NzLayoutModule } from 'ng-zorro-antd/layout';
 import { AdobeDocumentType } from '../../models/field.model';
+import { EditorStateService } from '../../services/editor-state.service';
+import { FieldEditorService } from '../../services/field-editor.service';
+import { FileActionsService } from '../../services/file-actions.service';
+import { HistoryService } from '../../services/history.service';
+import { PdfDocumentService } from '../../services/pdf-document.service';
+import { ZOOM_STEPS } from '../../utils/zoom';
 
 @Component({
   selector: 'app-toolbar',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    NzButtonModule,
-    NzUploadModule,
-    NzIconModule,
-    NzDividerModule,
-    NzSelectModule,
-    NzSpaceModule,
-    NzToolTipModule,
-    NzLayoutModule
-  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule, NzButtonModule, NzIconModule, NzSelectModule, NzToolTipModule],
   templateUrl: './toolbar.component.html',
-  styleUrls: ['./toolbar.component.less']
 })
 export class ToolbarComponent {
-  // Inputs
-  @Input() canUndo = false;
-  @Input() canRedo = false;
-  @Input() currentPage = 1;
-  @Input() totalPages = 0;
-  @Input() showGrid = false;
-  @Input() snapToGrid = false;
-  @Input() documentType: AdobeDocumentType = AdobeDocumentType.TRANSIENT;
-  @Input() leftSidebarCollapsed = false;
-  @Input() rightSidebarCollapsed = false;
+  protected readonly state = inject(EditorStateService);
+  protected readonly history = inject(HistoryService);
+  protected readonly pdf = inject(PdfDocumentService);
+  protected readonly actions = inject(FileActionsService);
+  protected readonly editor = inject(FieldEditorService);
+  protected readonly DocumentType = AdobeDocumentType;
+  protected readonly zoomSteps = ZOOM_STEPS;
 
-  // Outputs
-  @Output() fileSelected = new EventEmitter<File>();
-  @Output() importClicked = new EventEmitter<void>();
-  @Output() exportClicked = new EventEmitter<void>();
-  @Output() jsonViewClicked = new EventEmitter<void>();
-  @Output() pageChanged = new EventEmitter<number>();
-  @Output() gridToggled = new EventEmitter<boolean>();
-  @Output() snapToggled = new EventEmitter<boolean>();
-  @Output() undoClicked = new EventEmitter<void>();
-  @Output() redoClicked = new EventEmitter<void>();
-  @Output() documentTypeChanged = new EventEmitter<AdobeDocumentType>();
-  @Output() leftSidebarToggled = new EventEmitter<boolean>();
-  @Output() rightSidebarToggled = new EventEmitter<boolean>();
+  /** What the zoom select shows: 'fit' while following the window, else the chosen step. */
+  protected readonly zoomValue = computed<'fit' | number>(() => {
+    if (this.pdf.zoomMode() === 'fit-width') return 'fit';
+    const scale = this.pdf.scale();
+    return ZOOM_STEPS.find((step) => Math.abs(step - scale) < 0.001) ?? 'fit';
+  });
 
-  // File upload handler
-  beforeUpload = (file: any): boolean => {
-    // Convert NzUploadFile to native File
-    const nativeFile = (file as any).originFileObj || file;
-    this.fileSelected.emit(nativeFile);
-    return false; // Prevent automatic upload
-  };
+  private readonly documentTypeModel = viewChild<NgModel>('documentTypeModel');
 
-  onFileChange(event: any): void {
-    const nzFile = event?.file;
-    if (nzFile) {
-      const nativeFile = (nzFile as any).originFileObj || nzFile;
-      this.fileSelected.emit(nativeFile);
+  constructor() {
+    // A cancelled document-type change leaves the select showing the value the user clicked;
+    // push the real one back into it.
+    effect(() => {
+      const resyncs = this.state.documentTypeResync();
+      const model = this.documentTypeModel();
+      if (resyncs > 0 && model) {
+        untracked(() => model.control.setValue(this.state.documentType()));
+      }
+    });
+  }
+
+  protected onZoomSelect(value: 'fit' | number): void {
+    if (value === 'fit') {
+      this.pdf.fitWidth();
+    } else {
+      this.pdf.setManualScale(value);
     }
   }
 
-  onPreviousPage(): void {
-    if (this.currentPage > 1) {
-      this.pageChanged.emit(this.currentPage - 1);
-    }
+  protected toggleLeftSidebar(): void {
+    this.state.leftSidebarCollapsed.update((collapsed) => !collapsed);
   }
 
-  onNextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.pageChanged.emit(this.currentPage + 1);
-    }
+  protected toggleRightSidebar(): void {
+    this.state.rightSidebarCollapsed.update((collapsed) => !collapsed);
   }
 
-  onGridToggle(): void {
-    this.gridToggled.emit(!this.showGrid);
+  protected toggleGrid(): void {
+    this.state.showGrid.update((show) => !show);
   }
 
-  onSnapToggle(): void {
-    this.snapToggled.emit(!this.snapToGrid);
-  }
-
-  onDocumentTypeChange(type: AdobeDocumentType): void {
-    this.documentTypeChanged.emit(type);
-  }
-
-  onLeftSidebarToggle(): void {
-    this.leftSidebarToggled.emit(!this.leftSidebarCollapsed);
-  }
-
-  onRightSidebarToggle(): void {
-    this.rightSidebarToggled.emit(!this.rightSidebarCollapsed);
+  protected toggleSnap(): void {
+    this.state.snapToGrid.update((snap) => !snap);
   }
 }

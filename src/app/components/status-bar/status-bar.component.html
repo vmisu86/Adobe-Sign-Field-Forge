@@ -1,0 +1,17 @@
+<footer class="ff-statusbar">
+  <span class="ff-statusbar__item">{{ coordinateSystem() }}</span>
+
+  @if (pageSize(); as size) {
+    <span class="ff-statusbar__item ff-numeric">Page {{ size }}</span>
+  }
+
+  @if (pointer(); as p) {
+    <span class="ff-statusbar__item ff-numeric">X {{ p.x }} · Y {{ p.y }} pt</span>
+  }
+
+  <span class="ff-statusbar__spacer"></span>
+
+  @if (pdf.document()) {
+    <span class="ff-statusbar__item ff-numeric">Zoom {{ pdf.zoomPercent() }}%</span>
+  }
+</footer>

@@ -1,29 +1,23 @@
 import { TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
+import { provideTestApp } from './testing/test-providers';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
+      providers: provideTestApp(),
     }).compileComponents();
   });
 
-  it('should create the app', () => {
+  it('is titled FieldForge for Adobe Sign', () => {
     const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    expect(fixture.componentInstance.title).toBe('FieldForge for Adobe Sign');
   });
 
-  it(`should have the 'pdf-field-mapper' title`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('pdf-field-mapper');
-  });
-
-  it('should render title', () => {
+  it('renders the editor', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, pdf-field-mapper');
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-pdf-viewer')).not.toBeNull();
   });
 });

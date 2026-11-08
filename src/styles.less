@@ -1,1 +1,7 @@
-/* You can add global styles to this file, and also import other style files */
+// Global styles. Order matters: tokens first, then Ant Design (themed from the tokens), then ours.
+
+@import './styles/tokens.less';
+@import '../node_modules/ng-zorro-antd/ng-zorro-antd.less';
+@import './styles/ant-theme.less';
+@import './styles/base.less';
+@import './styles/components.less';

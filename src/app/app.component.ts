@@ -1,15 +1,13 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { PdfViewerComponent } from './components/pdf-viewer/pdf-viewer.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [
-    PdfViewerComponent
-  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [PdfViewerComponent],
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.less']
 })
 export class AppComponent {
-  title = 'FieldForge for Adobe Sign';
+  readonly title = 'FieldForge for Adobe Sign';
 }
